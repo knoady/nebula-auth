@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NebulaOS — Авторизация в системе</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #07080d;
+      --card-bg: rgba(18, 21, 33, 0.68);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-1: #6366f1;
+      --accent-2: #a855f7;
+      --accent-3: #ec4899;
+      --success: #10b981;
+      --danger: #ef4444;
+      --input-bg: rgba(255, 255, 255, 0.04);
+      --input-focus: rgba(99, 102, 241, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Анимированные градиентные сферы на фоне */
+    .ambient-bg {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.55;
+      animation: floatOrb 16s infinite alternate ease-in-out;
+    }
+
+    .orb-1 {
+      width: 420px;
+      height: 420px;
+      background: radial-gradient(circle, var(--accent-1), transparent 70%);
+      top: -10%;
+      left: -5%;
+    }
+
+    .orb-2 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, var(--accent-3), transparent 70%);
+      bottom: -15%;
+      right: -5%;
+      animation-delay: -5s;
+      animation-duration: 20s;
+    }
+
+    .orb-3 {
+      width: 360px;
+      height: 360px;
+      background: radial-gradient(circle, #06b6d4, transparent 70%);
+      top: 40%;
+      left: 45%;
+      animation-delay: -10s;
+      animation-duration: 18s;
+      opacity: 0.35;
+    }
+
+    @keyframes floatOrb {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(40px, -30px) scale(1.08); }
+      100% { transform: translate(-30px, 40px) scale(0.95); }
+    }
+
+    /* Основная сетка приложения */
+    .app-container {
+      width: 100%;
+      max-width: 1160px;
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 28px;
+      align-items: start;
+      animation: fadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @media (max-width: 960px) {
+      .app-container {
+        grid-template-columns: 1fr;
+        max-width: 520px;
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Стеклянные карточки */
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 36px 32px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6),
+                  inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Шапка бренда */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2), var(--accent-3));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 20px;
+      box-shadow: 0 8px 20px -4px rgba(168, 85, 247, 0.6);
+    }
+
+    .brand-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #ffffff, #c4b5fd, #f9a8d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    /* Переключатель Вход / Регистрация */
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 5px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      position: relative;
+      margin-bottom: 24px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 0;
+      cursor: pointer;
+      z-index: 2;
+      transition: color 0.3s ease;
+    }
+
+    .tab-btn.active {
+      color: #ffffff;
+    }
+
+    .tab-indicator {
+      position: absolute;
+      top: 5px;
+      bottom: 5px;
+      left: 5px;
+      width: calc(50% - 5px);
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.85), rgba(168, 85, 247, 0.85));
+      border-radius: 10px;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 1;
+    }
+
+    .tabs[data-mode="register"] .tab-indicator {
+      transform: translateX(100%);
+    }
+
+    /* Поля ввода */
+    .form-group {
+      margin-bottom: 18px;
+      transition: all 0.3s ease;
+    }
+
+    .form-group.hidden {
+      display: none;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #d1d5db;
+      margin-bottom: 7px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      padding: 12px 16px;
+      padding-right: 42px;
+      background: var(--input-bg);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      color: var(--text-main);
+      font-size: 14px;
+      outline: none;
+      transition: all 0.25s ease;
+    }
+
+    .form-select option {
+      background: #121521;
+      color: var(--text-main);
+    }
+
+    .form-input::placeholder {
+      color: rgba(156, 163, 175, 0.5);
+    }
+
+    .form-input:focus, .form-select:focus {
+      background: var(--input-focus);
+      border-color: var(--accent-1);
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    }
+
+    .toggle-pwd {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 13px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .toggle-pwd:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Индикатор сложности пароля */
+    .strength-meter {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .strength-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 4px;
+      transition: width 0.35s ease, background-color 0.35s ease;
+    }
+
+    .strength-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      display: block;
+      min-height: 16px;
+    }
+
+    /* Кнопка отправки с градиентом и бликом */
+    .submit-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2), var(--accent-3));
+      background-size: 200% 200%;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+      box-shadow: 0 10px 25px -5px rgba(168, 85, 247, 0.5);
+      animation: gradientShift 6s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .submit-btn::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+      transform: skewX(-20deg);
+      transition: left 0.6s ease;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px -5px rgba(236, 72, 153, 0.6);
+    }
+
+    .submit-btn:hover::after {
+      left: 140%;
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Правая колонка: Таблица данных */
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .table-title-wrap h2 {
+      font-size: 19px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-count {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      color: #c7d2fe;
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .action-btn {
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .action-btn.danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13.5px;
+    }
+
+    th {
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: #e5e7eb;
+      vertical-align: middle;
+    }
+
+    tbody tr {
+      transition: background 0.2s ease;
+      animation: rowSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes rowSlideIn {
+      from { opacity: 0; transform: translateX(-12px); background: rgba(99, 102, 241, 0.2); }
+      to { opacity: 1; transform: translateX(0); background: transparent; }
+    }
+
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .type-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .type-login {
+      background: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .type-register {
+      background: rgba(168, 85, 247, 0.15);
+      color: #d8b4fe;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* Toast уведомление */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(16, 185, 129, 0.18);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #d1fae5;
+      padding: 14px 20px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Фоновые градиентные сферы -->
+  <div class="ambient-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <main class="app-container">
+    <!-- Карточка авторизации -->
+    <section class="glass-card">
+      <div class="brand">
+        <div class="brand-logo">N</div>
+        <span class="brand-title">NebulaOS Cloud</span>
+      </div>
+      <p class="subtitle">Единый портал управления облачными кластерами. Авторизуйтесь, чтобы записать сессию в журнал.</p>
+
+      <!-- Переключатель режима -->
+      <div class="tabs" id="authTabs" data-mode="login">
+        <div class="tab-indicator"></div>
+        <button type="button" class="tab-btn active" onclick="switchMode('login')">Вход</button>
+        <button type="button" class="tab-btn" onclick="switchMode('register')">Регистрация</button>
+      </div>
+
+      <form id="authForm">
+        <!-- Поле Имени (только для регистрации) -->
+        <div class="form-group hidden" id="nameGroup">
+          <label class="form-label" for="userName">Имя пользователя / Никнейм</label>
+          <div class="input-wrapper">
+            <input type="text" id="userName" class="form-input" placeholder="Например, Alex_Dev" />
+          </div>
+        </div>
+
+        <!-- Поле Роли -->
+        <div class="form-group">
+          <label class="form-label" for="userRole">Роль в проекте</label>
+          <div class="input-wrapper">
+            <select id="userRole" class="form-select">
+              <option value="Frontend Developer">Frontend Developer</option>
+              <option value="Software Engineer">Software Engineer</option>
+              <option value="DevOps / Linux Admin">DevOps / Linux Admin</option>
+              <option value="UI/UX Designer">UI/UX Designer</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Поле Email -->
+        <div class="form-group">
+          <label class="form-label" for="userEmail">Корпоративный Email</label>
+          <div class="input-wrapper">
+            <input type="email" id="userEmail" class="form-input" placeholder="name@nebula.io" required />
+          </div>
+        </div>
+
+        <!-- Поле Пароля -->
+        <div class="form-group">
+          <label class="form-label" for="userPassword">Пароль</label>
+          <div class="input-wrapper">
+            <input type="password" id="userPassword" class="form-input" placeholder="Минимум 6 символов" required />
+            <button type="button" class="toggle-pwd" id="togglePwdBtn">Показать</button>
+          </div>
+          <div class="strength-meter">
+            <div class="strength-bar" id="strengthBar"></div>
+          </div>
+          <span class="strength-text" id="strengthText">Введите пароль для оценки надежности</span>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">Войти в систему</button>
+      </form>
+    </section>
+
+    <!-- Карточка с живой таблицей записанных данных -->
+    <section class="glass-card">
+      <div class="table-header">
+        <div class="table-title-wrap">
+          <h2>
+            Таблица записей
+            <span class="badge-count" id="recordCount">0 записей</span>
+          </h2>
+        </div>
+        <div class="table-actions">
+          <button type="button" class="action-btn" onclick="exportToCSV()">Скачать CSV (Excel)</button>
+          <button type="button" class="action-btn danger" onclick="clearTable()">Очистить</button>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Событие</th>
+              <th>Пользователь</th>
+              <th>Email</th>
+              <th>Роль</th>
+              <th>Время</th>
+            </tr>
+          </thead>
+          <tbody id="recordsBody">
+            <!-- Строки добавляются через JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast">Данные успешно записаны в таблицу!</div>
+
+  <script>
+    // Опционально: URL вебхука Google Apps Script, если нужно дублировать записи в Google Таблицу
+    const WEBHOOK_URL = ""; 
+
+    let currentMode = 'login';
+    const STORAGE_KEY = 'nebula_auth_records_v1';
+
+    const authTabs = document.getElementById('authTabs');
+    const tabBtns = authTabs.querySelectorAll('.tab-btn');
+    const nameGroup = document.getElementById('nameGroup');
+    const userNameInput = document.getElementById('userName');
+    const userRoleInput = document.getElementById('userRole');
+    const userEmailInput = document.getElementById('userEmail');
+    const userPasswordInput = document.getElementById('userPassword');
+    const submitBtn = document.getElementById('submitBtn');
+    const recordsBody = document.getElementById('recordsBody');
+    const recordCount = document.getElementById('recordCount');
+    const strengthBar = document.getElementById('strengthBar');
+    const strengthText = document.getElementById('strengthText');
+    const togglePwdBtn = document.getElementById('togglePwdBtn');
+    const toast = document.getElementById('toast');
+
+    // Загрузка сохраненных данных при старте
+    let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    renderTable();
+
+    // Переключение Вход / Регистрация
+    function switchMode(mode) {
+      currentMode = mode;
+      authTabs.setAttribute('data-mode', mode);
+      tabBtns[0].classList.toggle('active', mode === 'login');
+      tabBtns[1].classList.toggle('active', mode === 'register');
+
+      if (mode === 'register') {
+        nameGroup.classList.remove('hidden');
+        userNameInput.required = true;
+        submitBtn.textContent = 'Создать аккаунт и записать';
+      } else {
+        nameGroup.classList.add('hidden');
+        userNameInput.required = false;
+        submitBtn.textContent = 'Войти в систему';
+      }
+    }
+
+    // Показать / скрыть пароль
+    togglePwdBtn.addEventListener('click', () => {
+      const isPwd = userPasswordInput.type === 'password';
+      userPasswordInput.type = isPwd ? 'text' : 'password';
+      togglePwdBtn.textContent = isPwd ? 'Скрыть' : 'Показать';
+    });
+
+    // Живая оценка сложности пароля
+    userPasswordInput.addEventListener('input', () => {
+      const val = userPasswordInput.value;
+      let score = 0;
+      if (val.length >= 6) score += 25;
+      if (val.length >= 10) score += 25;
+      if (/[A-ZА-Я]/.test(val) && /[a-zа-я]/.test(val)) score += 25;
+      if (/[0-9!@#$%^&*]/.test(val)) score += 25;
+
+      strengthBar.style.width = score + '%';
+      if (score === 0) {
+        strengthText.textContent = 'Введите пароль для оценки надежности';
+      } else if (score <= 25) {
+        strengthBar.style.backgroundColor = '#ef4444';
+        strengthText.textContent = 'Слабый пароль';
+      } else if (score <= 50) {
+        strengthBar.style.backgroundColor = '#f59e0b';
+        strengthText.textContent = 'Средний пароль';
+      } else if (score <= 75) {
+        strengthBar.style.backgroundColor = '#3b82f6';
+        strengthText.textContent = 'Хороший пароль';
+      } else {
+        strengthBar.style.backgroundColor = '#10b981';
+        strengthText.textContent = 'Отличный криптостойкий пароль';
+      }
+    });
+
+    // Обработка отправки формы
+    document.getElementById('authForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = userEmailInput.value.trim();
+      const name = currentMode === 'register'
+        ? userNameInput.value.trim()
+        : email.split('@')[0];
+
+      const newEntry = {
+        id: records.length + 1,
+        type: currentMode === 'login' ? 'Вход' : 'Регистрация',
+        name: name || 'Гость',
+        email: email,
+        role: userRoleInput.value,
+        timestamp: new Date().toLocaleString('ru-RU', {
+          day: '2-digit', month: '2-digit', year: 'numeric',
+          hour: '2-digit', minute: '2-digit', second: '2-digit'
+        })
+      };
+
+      records.unshift(newEntry);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+      renderTable();
+      showToast('Запись успешно добавлена в таблицу!');
+
+      // Если указан вебхук для Google Таблиц — отправляем данные в облако
+      if (WEBHOOK_URL) {
+        try {
+          await fetch(WEBHOOK_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newEntry)
+          });
+        } catch (err) {
+          console.error('Ошибка отправки в облачную таблицу:', err);
+        }
+      }
+
+      e.target.reset();
+      strengthBar.style.width = '0%';
+      strengthText.textContent = 'Введите пароль для оценки надежности';
+    });
+
+    // Отрисовка таблицы
+    function renderTable() {
+      recordCount.textContent = `${records.length} зап.`;
+
+      if (records.length === 0) {
+        recordsBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="empty-state">
+              Пока нет ни одной записи. Заполните форму слева, чтобы проверить работу таблицы.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      recordsBody.innerHTML = records.map((item) => {
+        const badgeClass = item.type === 'Вход' ? 'type-login' : 'type-register';
+        return `
+          <tr>
+            <td>#${item.id}</td>
+            <td><span class="type-pill ${badgeClass}">${escapeHtml(item.type)}</span></td>
+            <td><strong>${escapeHtml(item.name)}</strong></td>
+            <td>${escapeHtml(item.email)}</td>
+            <td>${escapeHtml(item.role)}</td>
+            <td>${escapeHtml(item.timestamp)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Экспорт таблицы в CSV (открывается в Excel и Google Sheets)
+    function exportToCSV() {
+      if (records.length === 0) {
+        showToast('Таблица пуста — нечего экспортировать');
+        return;
+      }
+
+      const headers = ['ID', 'Событие', 'Пользователь', 'Email', 'Роль', 'Время'];
+      const rows = records.map(r => [r.id, r.type, r.name, r.email, r.role, r.timestamp]);
+
+      const csvContent = '\uFEFF' + [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))
+        .join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `nebula_users_${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Очистка таблицы
+    function clearTable() {
+      records = [];
+      localStorage.removeItem(STORAGE_KEY);
+      renderTable();
+      showToast('Таблица очищена');
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, s => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[s]));
+    }
+  </script>
+</body>
+</html>
