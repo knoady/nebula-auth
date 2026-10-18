@@ -1,821 +1,2090 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NebulaOS — Авторизация в системе</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg-dark: #07080d;
-      --card-bg: rgba(18, 21, 33, 0.68);
-      --card-border: rgba(255, 255, 255, 0.1);
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
-      --accent-1: #6366f1;
-      --accent-2: #a855f7;
-      --accent-3: #ec4899;
-      --success: #10b981;
-      --danger: #ef4444;
-      --input-bg: rgba(255, 255, 255, 0.04);
-      --input-focus: rgba(99, 102, 241, 0.18);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-
-    body {
-      min-height: 100vh;
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      overflow-x: hidden;
-      position: relative;
-    }
-
-    /* Анимированные градиентные сферы на фоне */
-    .ambient-bg {
-      position: fixed;
-      inset: 0;
-      overflow: hidden;
-      z-index: -1;
-      pointer-events: none;
-    }
-
-    .orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(90px);
-      opacity: 0.55;
-      animation: floatOrb 16s infinite alternate ease-in-out;
-    }
-
-    .orb-1 {
-      width: 420px;
-      height: 420px;
-      background: radial-gradient(circle, var(--accent-1), transparent 70%);
-      top: -10%;
-      left: -5%;
-    }
-
-    .orb-2 {
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, var(--accent-3), transparent 70%);
-      bottom: -15%;
-      right: -5%;
-      animation-delay: -5s;
-      animation-duration: 20s;
-    }
-
-    .orb-3 {
-      width: 360px;
-      height: 360px;
-      background: radial-gradient(circle, #06b6d4, transparent 70%);
-      top: 40%;
-      left: 45%;
-      animation-delay: -10s;
-      animation-duration: 18s;
-      opacity: 0.35;
-    }
-
-    @keyframes floatOrb {
-      0% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(40px, -30px) scale(1.08); }
-      100% { transform: translate(-30px, 40px) scale(0.95); }
-    }
-
-    /* Основная сетка приложения */
-    .app-container {
-      width: 100%;
-      max-width: 1160px;
-      display: grid;
-      grid-template-columns: 420px 1fr;
-      gap: 28px;
-      align-items: start;
-      animation: fadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @media (max-width: 960px) {
-      .app-container {
-        grid-template-columns: 1fr;
-        max-width: 520px;
-      }
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Стеклянные карточки */
-    .glass-card {
-      background: var(--card-bg);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid var(--card-border);
-      border-radius: 24px;
-      padding: 36px 32px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6),
-                  inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* Шапка бренда */
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .brand-logo {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--accent-1), var(--accent-2), var(--accent-3));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 20px;
-      box-shadow: 0 8px 20px -4px rgba(168, 85, 247, 0.6);
-    }
-
-    .brand-title {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      background: linear-gradient(90deg, #ffffff, #c4b5fd, #f9a8d4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .subtitle {
-      color: var(--text-muted);
-      font-size: 14px;
-      line-height: 1.5;
-      margin-bottom: 24px;
-    }
-
-    /* Переключатель Вход / Регистрация */
-    .tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      background: rgba(0, 0, 0, 0.35);
-      padding: 5px;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      position: relative;
-      margin-bottom: 24px;
-    }
-
-    .tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 14px;
-      font-weight: 600;
-      padding: 10px 0;
-      cursor: pointer;
-      z-index: 2;
-      transition: color 0.3s ease;
-    }
-
-    .tab-btn.active {
-      color: #ffffff;
-    }
-
-    .tab-indicator {
-      position: absolute;
-      top: 5px;
-      bottom: 5px;
-      left: 5px;
-      width: calc(50% - 5px);
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.85), rgba(168, 85, 247, 0.85));
-      border-radius: 10px;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
-      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-      z-index: 1;
-    }
-
-    .tabs[data-mode="register"] .tab-indicator {
-      transform: translateX(100%);
-    }
-
-    /* Поля ввода */
-    .form-group {
-      margin-bottom: 18px;
-      transition: all 0.3s ease;
-    }
-
-    .form-group.hidden {
-      display: none;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 13px;
-      font-weight: 500;
-      color: #d1d5db;
-      margin-bottom: 7px;
-    }
-
-    .input-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-
-    .form-input, .form-select {
-      width: 100%;
-      padding: 12px 16px;
-      padding-right: 42px;
-      background: var(--input-bg);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 12px;
-      color: var(--text-main);
-      font-size: 14px;
-      outline: none;
-      transition: all 0.25s ease;
-    }
-
-    .form-select option {
-      background: #121521;
-      color: var(--text-main);
-    }
-
-    .form-input::placeholder {
-      color: rgba(156, 163, 175, 0.5);
-    }
-
-    .form-input:focus, .form-select:focus {
-      background: var(--input-focus);
-      border-color: var(--accent-1);
-      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
-    }
-
-    .toggle-pwd {
-      position: absolute;
-      right: 12px;
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 13px;
-      padding: 4px 6px;
-      border-radius: 6px;
-      transition: color 0.2s, background 0.2s;
-    }
-
-    .toggle-pwd:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    /* Индикатор сложности пароля */
-    .strength-meter {
-      height: 4px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 4px;
-      margin-top: 8px;
-      overflow: hidden;
-    }
-
-    .strength-bar {
-      height: 100%;
-      width: 0%;
-      border-radius: 4px;
-      transition: width 0.35s ease, background-color 0.35s ease;
-    }
-
-    .strength-text {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 4px;
-      display: block;
-      min-height: 16px;
-    }
-
-    /* Кнопка отправки с градиентом и бликом */
-    .submit-btn {
-      width: 100%;
-      margin-top: 8px;
-      padding: 14px;
-      border: none;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--accent-1), var(--accent-2), var(--accent-3));
-      background-size: 200% 200%;
-      color: #ffffff;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.2s ease, box-shadow 0.3s ease;
-      box-shadow: 0 10px 25px -5px rgba(168, 85, 247, 0.5);
-      animation: gradientShift 6s ease infinite;
-    }
-
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    .submit-btn::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 60%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
-      transform: skewX(-20deg);
-      transition: left 0.6s ease;
-    }
-
-    .submit-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 14px 30px -5px rgba(236, 72, 153, 0.6);
-    }
-
-    .submit-btn:hover::after {
-      left: 140%;
-    }
-
-    .submit-btn:active {
-      transform: translateY(0);
-    }
-
-    /* Правая колонка: Таблица данных */
-    .table-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .table-title-wrap h2 {
-      font-size: 19px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .badge-count {
-      font-size: 12px;
-      padding: 3px 10px;
-      border-radius: 20px;
-      background: rgba(99, 102, 241, 0.2);
-      border: 1px solid rgba(99, 102, 241, 0.4);
-      color: #c7d2fe;
-    }
-
-    .table-actions {
-      display: flex;
-      gap: 10px;
-    }
-
-    .action-btn {
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-main);
-      transition: all 0.2s ease;
-    }
-
-    .action-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
-      transform: translateY(-1px);
-    }
-
-    .action-btn.danger:hover {
-      background: rgba(239, 68, 68, 0.2);
-      border-color: rgba(239, 68, 68, 0.4);
-      color: #fca5a5;
-    }
-
-    .table-container {
-      overflow-x: auto;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(0, 0, 0, 0.25);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-      font-size: 13.5px;
-    }
-
-    th {
-      padding: 14px 16px;
-      background: rgba(255, 255, 255, 0.04);
-      color: var(--text-muted);
-      font-weight: 600;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    td {
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      color: #e5e7eb;
-      vertical-align: middle;
-    }
-
-    tbody tr {
-      transition: background 0.2s ease;
-      animation: rowSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes rowSlideIn {
-      from { opacity: 0; transform: translateX(-12px); background: rgba(99, 102, 241, 0.2); }
-      to { opacity: 1; transform: translateX(0); background: transparent; }
-    }
-
-    tbody tr:hover {
-      background: rgba(255, 255, 255, 0.03);
-    }
-
-    .type-pill {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .type-login {
-      background: rgba(59, 130, 246, 0.15);
-      color: #93c5fd;
-      border: 1px solid rgba(59, 130, 246, 0.3);
-    }
-
-    .type-register {
-      background: rgba(168, 85, 247, 0.15);
-      color: #d8b4fe;
-      border: 1px solid rgba(168, 85, 247, 0.3);
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-muted);
-      font-size: 14px;
-    }
-
-    /* Toast уведомление */
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: rgba(16, 185, 129, 0.18);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(16, 185, 129, 0.4);
-      color: #d1fae5;
-      padding: 14px 20px;
-      border-radius: 14px;
-      font-size: 14px;
-      font-weight: 500;
-      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
-      transform: translateY(100px);
-      opacity: 0;
-      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 100;
-    }
-
-    .toast.show {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Фоновые градиентные сферы -->
-  <div class="ambient-bg">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-  </div>
-
-  <main class="app-container">
-    <!-- Карточка авторизации -->
-    <section class="glass-card">
-      <div class="brand">
-        <div class="brand-logo">N</div>
-        <span class="brand-title">NebulaOS Cloud</span>
-      </div>
-      <p class="subtitle">Единый портал управления облачными кластерами. Авторизуйтесь, чтобы записать сессию в журнал.</p>
-
-      <!-- Переключатель режима -->
-      <div class="tabs" id="authTabs" data-mode="login">
-        <div class="tab-indicator"></div>
-        <button type="button" class="tab-btn active" onclick="switchMode('login')">Вход</button>
-        <button type="button" class="tab-btn" onclick="switchMode('register')">Регистрация</button>
-      </div>
-
-      <form id="authForm">
-        <!-- Поле Имени (только для регистрации) -->
-        <div class="form-group hidden" id="nameGroup">
-          <label class="form-label" for="userName">Имя пользователя / Никнейм</label>
-          <div class="input-wrapper">
-            <input type="text" id="userName" class="form-input" placeholder="Например, Alex_Dev" />
-          </div>
-        </div>
-
-        <!-- Поле Роли -->
-        <div class="form-group">
-          <label class="form-label" for="userRole">Роль в проекте</label>
-          <div class="input-wrapper">
-            <select id="userRole" class="form-select">
-              <option value="Frontend Developer">Frontend Developer</option>
-              <option value="Software Engineer">Software Engineer</option>
-              <option value="DevOps / Linux Admin">DevOps / Linux Admin</option>
-              <option value="UI/UX Designer">UI/UX Designer</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Поле Email -->
-        <div class="form-group">
-          <label class="form-label" for="userEmail">Корпоративный Email</label>
-          <div class="input-wrapper">
-            <input type="email" id="userEmail" class="form-input" placeholder="name@nebula.io" required />
-          </div>
-        </div>
-
-        <!-- Поле Пароля -->
-        <div class="form-group">
-          <label class="form-label" for="userPassword">Пароль</label>
-          <div class="input-wrapper">
-            <input type="password" id="userPassword" class="form-input" placeholder="Минимум 6 символов" required />
-            <button type="button" class="toggle-pwd" id="togglePwdBtn">Показать</button>
-          </div>
-          <div class="strength-meter">
-            <div class="strength-bar" id="strengthBar"></div>
-          </div>
-          <span class="strength-text" id="strengthText">Введите пароль для оценки надежности</span>
-        </div>
-
-        <button type="submit" class="submit-btn" id="submitBtn">Войти в систему</button>
-      </form>
-    </section>
-
-    <!-- Карточка с живой таблицей записанных данных -->
-    <section class="glass-card">
-      <div class="table-header">
-        <div class="table-title-wrap">
-          <h2>
-            Таблица записей
-            <span class="badge-count" id="recordCount">0 записей</span>
-          </h2>
-        </div>
-        <div class="table-actions">
-          <button type="button" class="action-btn" onclick="exportToCSV()">Скачать CSV (Excel)</button>
-          <button type="button" class="action-btn danger" onclick="clearTable()">Очистить</button>
-        </div>
-      </div>
-
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Событие</th>
-              <th>Пользователь</th>
-              <th>Email</th>
-              <th>Роль</th>
-              <th>Время</th>
-            </tr>
-          </thead>
-          <tbody id="recordsBody">
-            <!-- Строки добавляются через JS -->
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <div class="toast" id="toast">Данные успешно записаны в таблицу!</div>
-
-  <script>
-    // Опционально: URL вебхука Google Apps Script, если нужно дублировать записи в Google Таблицу
-    const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwV_dObS0wFBhcp2qAXWCWuhqNJ-s_jN9EMe_1srT70YMOzuMxjjbmae0A9de_-j7HR/exec";
-
-    let currentMode = 'login';
-    const STORAGE_KEY = 'nebula_auth_records_v1';
-
-    const authTabs = document.getElementById('authTabs');
-    const tabBtns = authTabs.querySelectorAll('.tab-btn');
-    const nameGroup = document.getElementById('nameGroup');
-    const userNameInput = document.getElementById('userName');
-    const userRoleInput = document.getElementById('userRole');
-    const userEmailInput = document.getElementById('userEmail');
-    const userPasswordInput = document.getElementById('userPassword');
-    const submitBtn = document.getElementById('submitBtn');
-    const recordsBody = document.getElementById('recordsBody');
-    const recordCount = document.getElementById('recordCount');
-    const strengthBar = document.getElementById('strengthBar');
-    const strengthText = document.getElementById('strengthText');
-    const togglePwdBtn = document.getElementById('togglePwdBtn');
-    const toast = document.getElementById('toast');
-
-    // Загрузка сохраненных данных при старте
-    let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    renderTable();
-
-    // Переключение Вход / Регистрация
-    function switchMode(mode) {
-      currentMode = mode;
-      authTabs.setAttribute('data-mode', mode);
-      tabBtns[0].classList.toggle('active', mode === 'login');
-      tabBtns[1].classList.toggle('active', mode === 'register');
-
-      if (mode === 'register') {
-        nameGroup.classList.remove('hidden');
-        userNameInput.required = true;
-        submitBtn.textContent = 'Создать аккаунт и записать';
-      } else {
-        nameGroup.classList.add('hidden');
-        userNameInput.required = false;
-        submitBtn.textContent = 'Войти в систему';
-      }
-    }
-
-    // Показать / скрыть пароль
-    togglePwdBtn.addEventListener('click', () => {
-      const isPwd = userPasswordInput.type === 'password';
-      userPasswordInput.type = isPwd ? 'text' : 'password';
-      togglePwdBtn.textContent = isPwd ? 'Скрыть' : 'Показать';
-    });
-
-    // Живая оценка сложности пароля
-    userPasswordInput.addEventListener('input', () => {
-      const val = userPasswordInput.value;
-      let score = 0;
-      if (val.length >= 6) score += 25;
-      if (val.length >= 10) score += 25;
-      if (/[A-ZА-Я]/.test(val) && /[a-zа-я]/.test(val)) score += 25;
-      if (/[0-9!@#$%^&*]/.test(val)) score += 25;
-
-      strengthBar.style.width = score + '%';
-      if (score === 0) {
-        strengthText.textContent = 'Введите пароль для оценки надежности';
-      } else if (score <= 25) {
-        strengthBar.style.backgroundColor = '#ef4444';
-        strengthText.textContent = 'Слабый пароль';
-      } else if (score <= 50) {
-        strengthBar.style.backgroundColor = '#f59e0b';
-        strengthText.textContent = 'Средний пароль';
-      } else if (score <= 75) {
-        strengthBar.style.backgroundColor = '#3b82f6';
-        strengthText.textContent = 'Хороший пароль';
-      } else {
-        strengthBar.style.backgroundColor = '#10b981';
-        strengthText.textContent = 'Отличный криптостойкий пароль';
-      }
-    });
-
-    // Обработка отправки формы
-    document.getElementById('authForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const email = userEmailInput.value.trim();
-      const name = currentMode === 'register'
-        ? userNameInput.value.trim()
-        : email.split('@')[0];
-
-      const newEntry = {
-        id: records.length + 1,
-        type: currentMode === 'login' ? 'Вход' : 'Регистрация',
-        name: name || 'Гость',
-        email: email,
-        role: userRoleInput.value,
-        timestamp: new Date().toLocaleString('ru-RU', {
-          day: '2-digit', month: '2-digit', year: 'numeric',
-          hour: '2-digit', minute: '2-digit', second: '2-digit'
-        })
-      };
-
-      records.unshift(newEntry);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-      renderTable();
-      showToast('Запись успешно добавлена в таблицу!');
-
-      // Если указан вебхук для Google Таблиц — отправляем данные в облако
-      if (WEBHOOK_URL) {
-        try {
-          await fetch(WEBHOOK_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newEntry)
-          });
-        } catch (err) {
-          console.error('Ошибка отправки в облачную таблицу:', err);
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VoxelCraft RTX — Браузерный Minecraft 3D</title>
+    <!-- Tailwind CSS для современного интерфейса -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js r128 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Шрифт Inter и JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            box-sizing: border-box;
         }
-      }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #090d16;
+            font-family: 'Inter', sans-serif;
+        }
+        #game-canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        .font-mono-hud {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Стили слотов хотбара */
+        .hotbar-slot {
+            transition: all 0.14s cubic-bezier(0.22, 1, 0.36, 1);
+            background: rgba(15, 23, 42, 0.72);
+            border: 2px solid rgba(148, 163, 184, 0.28);
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
+        }
+        .hotbar-slot.active {
+            transform: translateY(-6px) scale(1.08);
+            border-color: #38bdf8;
+            background: rgba(30, 41, 59, 0.92);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.45), inset 0 0 8px rgba(56, 189, 248, 0.25);
+        }
+        .hotbar-icon {
+            image-rendering: pixelated;
+        }
+        /* Прицел */
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.85);
+            border-radius: 1px;
+        }
+        #crosshair::before {
+            width: 16px;
+            height: 2px;
+            top: 7px;
+            left: 0;
+        }
+        #crosshair::after {
+            width: 2px;
+            height: 16px;
+            top: 0;
+            left: 7px;
+        }
+        /* Кастомные ползунки */
+        input[type="range"] {
+            accent-color: #38bdf8;
+        }
+    </style>
+</head>
+<body class="text-slate-100">
 
-      e.target.reset();
-      strengthBar.style.width = '0%';
-      strengthText.textContent = 'Введите пароль для оценки надежности';
-    });
+    <!-- 3D Сцена -->
+    <canvas id="game-canvas"></canvas>
 
-    // Отрисовка таблицы
-    function renderTable() {
-      recordCount.textContent = `${records.length} зап.`;
+    <!-- Эффект погружения под воду -->
+    <div id="underwater-overlay" class="fixed inset-0 pointer-events-none transition-opacity duration-300 opacity-0"
+         style="background: radial-gradient(circle, rgba(6, 78, 130, 0.38) 0%, rgba(2, 36, 74, 0.75) 100%); backdrop-filter: blur(1.5px);"></div>
 
-      if (records.length === 0) {
-        recordsBody.innerHTML = `
-          <tr>
-            <td colspan="6" class="empty-state">
-              Пока нет ни одной записи. Заполните форму слева, чтобы проверить работу таблицы.
-            </td>
-          </tr>
-        `;
-        return;
-      }
+    <!-- Виньетка для кинематографичности -->
+    <div class="fixed inset-0 pointer-events-none"
+         style="background: radial-gradient(circle, rgba(0,0,0,0) 62%, rgba(0,0,0,0.42) 100%);"></div>
 
-      recordsBody.innerHTML = records.map((item) => {
-        const badgeClass = item.type === 'Вход' ? 'type-login' : 'type-register';
-        return `
-          <tr>
-            <td>#${item.id}</td>
-            <td><span class="type-pill ${badgeClass}">${escapeHtml(item.type)}</span></td>
-            <td><strong>${escapeHtml(item.name)}</strong></td>
-            <td>${escapeHtml(item.email)}</td>
-            <td>${escapeHtml(item.role)}</td>
-            <td>${escapeHtml(item.timestamp)}</td>
-          </tr>
-        `;
-      }).join('');
+    <!-- Прицел -->
+    <div id="crosshair" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-20"></div>
+
+    <!-- Верхний левый HUD: Отладка и Статус -->
+    <div class="fixed top-4 left-4 z-20 pointer-events-none flex flex-col gap-2">
+        <div class="bg-slate-950/70 backdrop-blur-md border border-slate-700/60 rounded-2xl px-4 py-3 shadow-2xl">
+            <div class="flex items-center gap-2.5 mb-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="font-extrabold tracking-tight text-sm text-white">VOXELCRAFT <span class="text-sky-400">RTX</span></span>
+                <span id="hud-fps" class="font-mono-hud text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md">60 FPS</span>
+            </div>
+            <div class="font-mono-hud text-xs text-slate-300 space-y-1">
+                <div>XYZ: <span id="hud-xyz" class="text-white font-semibold">0.0 / 24.0 / 0.0</span></div>
+                <div>Биом: <span id="hud-biome" class="text-amber-300">Изумрудные равнины</span></div>
+                <div>Время: <span id="hud-time" class="text-sky-300">12:00 (День)</span> | Чанки: <span id="hud-chunks" class="text-slate-200">0</span></div>
+            </div>
+        </div>
+
+        <!-- Индикаторы режимов -->
+        <div class="flex flex-wrap gap-1.5">
+            <div id="badge-fly" class="hidden bg-sky-500/80 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-xl shadow-lg border border-sky-300/40">
+                ✈️ РЕЖИМ ПОЛЁТА (F)
+            </div>
+            <div id="badge-torch" class="bg-amber-500/80 backdrop-blur-md text-slate-950 text-xs font-bold px-3 py-1 rounded-xl shadow-lg border border-amber-300/50">
+                🔦 ФОНАРЬ ВКЛ (L)
+            </div>
+        </div>
+    </div>
+
+    <!-- Верхняя правая подсказка управления -->
+    <div class="fixed top-4 right-4 z-20 hidden md:flex flex-col items-end gap-2 pointer-events-none">
+        <div class="bg-slate-950/65 backdrop-blur-md border border-slate-700/50 rounded-2xl px-3.5 py-2.5 text-xs text-slate-300 space-y-1 shadow-xl">
+            <div><span class="text-white font-semibold">ЛКМ</span> — Сломать | <span class="text-white font-semibold">ПКМ</span> — Поставить</div>
+            <div><span class="text-white font-semibold">WASD + Shift</span> — Бег | <span class="text-white font-semibold">Пробел</span> — Прыжок</div>
+            <div><span class="text-white font-semibold">F</span> — Полёт | <span class="text-white font-semibold">L</span> — Динамический свет | <span class="text-white font-semibold">ESC</span> — Меню</div>
+        </div>
+    </div>
+
+    <!-- Уведомление (Тост) -->
+    <div id="toast-msg" class="fixed top-20 left-1/2 -translate-x-1/2 z-30 pointer-events-none opacity-0 transition-all duration-300 transform -translate-y-2 bg-slate-900/90 backdrop-blur-md border border-sky-400/50 text-white px-5 py-2.5 rounded-2xl shadow-2xl text-sm font-semibold">
+        Мир сохранён!
+    </div>
+
+    <!-- Нижняя панель: Название блока и Хотбар -->
+    <div class="fixed bottom-5 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2.5 pointer-events-none">
+        <div id="selected-block-label" class="bg-slate-950/80 backdrop-blur-md border border-slate-700/60 px-4 py-1 rounded-full text-xs font-bold tracking-wide text-sky-300 shadow-lg">
+            Дёрн (Трава)
+        </div>
+        <div id="hotbar" class="flex items-center gap-2 p-2 rounded-2xl bg-slate-950/75 backdrop-blur-md border border-slate-700/60 shadow-2xl pointer-events-auto">
+            <!-- Слоты генерируются скриптом -->
+        </div>
+    </div>
+
+    <!-- Мобильное управление (для сенсорных экранов) -->
+    <div id="mobile-controls" class="fixed inset-x-4 bottom-24 z-20 flex justify-between items-end pointer-events-none md:hidden">
+        <div class="grid grid-cols-3 gap-1.5 pointer-events-auto bg-slate-950/50 p-2 rounded-2xl backdrop-blur-sm border border-slate-700/40">
+            <div></div>
+            <button data-key="KeyW" class="w-12 h-12 rounded-xl bg-slate-800/80 active:bg-sky-500 text-white font-bold flex items-center justify-center">▲</button>
+            <div></div>
+            <button data-key="KeyA" class="w-12 h-12 rounded-xl bg-slate-800/80 active:bg-sky-500 text-white font-bold flex items-center justify-center">◀</button>
+            <button data-key="KeyS" class="w-12 h-12 rounded-xl bg-slate-800/80 active:bg-sky-500 text-white font-bold flex items-center justify-center">▼</button>
+            <button data-key="KeyD" class="w-12 h-12 rounded-xl bg-slate-800/80 active:bg-sky-500 text-white font-bold flex items-center justify-center">▶</button>
+        </div>
+        <div class="flex flex-col gap-2 pointer-events-auto">
+            <div class="flex gap-2">
+                <button id="mob-break" class="px-4 py-3 rounded-xl bg-rose-600/85 active:bg-rose-500 text-white font-bold text-xs shadow-lg">Сломать</button>
+                <button id="mob-place" class="px-4 py-3 rounded-xl bg-emerald-600/85 active:bg-emerald-500 text-white font-bold text-xs shadow-lg">Блок</button>
+            </div>
+            <div class="flex gap-2">
+                <button id="mob-fly" class="px-3 py-2.5 rounded-xl bg-sky-600/80 text-white font-bold text-xs">Полёт</button>
+                <button data-key="Space" class="flex-1 py-2.5 rounded-xl bg-slate-800/85 active:bg-sky-500 text-white font-bold text-xs">Прыжок</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Меню паузы / Настройки / Экспорт для GitHub -->
+    <div id="pause-modal" class="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4 transition-opacity duration-200">
+        <div class="w-full max-w-2xl bg-slate-900/95 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden">
+            <!-- Шапка -->
+            <div class="bg-gradient-to-r from-emerald-600/30 via-sky-600/25 to-indigo-600/30 border-b border-slate-700/70 px-6 py-5 flex items-center justify-between">
+                <div>
+                    <div class="flex items-center gap-2.5">
+                        <span class="px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-wider bg-emerald-500 text-slate-950 rounded-md">GitHub Ready</span>
+                        <h1 class="text-2xl font-extrabold tracking-tight text-white">VOXELCRAFT <span class="text-sky-400">3D ENGINE</span></h1>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-1">Реалистичный воксельный движок с Ambient Occlusion, мягкими тенями и генерацией мира</p>
+                </div>
+                <button id="btn-download-github" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 active:scale-95 text-sky-300 border border-sky-400/40 px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-lg">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/></svg>
+                    Скачать index.html
+                </button>
+            </div>
+
+            <!-- Контент меню -->
+            <div class="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+                <!-- Главная кнопка входа -->
+                <button id="btn-resume" class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 active:scale-[0.99] text-slate-950 font-extrabold text-lg tracking-wide shadow-xl shadow-sky-500/20 transition flex items-center justify-center gap-2">
+                    <span>▶ ИГРАТЬ В МИРЕ</span>
+                </button>
+
+                <!-- Настройки графики и мира -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Дальность прорисовки -->
+                    <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4">
+                        <div class="flex justify-between text-xs font-bold mb-2">
+                            <span class="text-slate-300">Дальность прорисовки (Чанки)</span>
+                            <span id="val-render-dist" class="text-sky-400">4 чанка</span>
+                        </div>
+                        <input id="opt-render-dist" type="range" min="2" max="6" step="1" value="4" class="w-full cursor-pointer">
+                        <p class="text-[11px] text-slate-400 mt-1">Меньше — выше FPS на слабых ПК; больше — дальний горизонт</p>
+                    </div>
+
+                    <!-- Время суток -->
+                    <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4">
+                        <div class="flex justify-between text-xs font-bold mb-2">
+                            <span class="text-slate-300">Время суток (Солнце / Луна)</span>
+                            <span id="val-time" class="text-amber-300">10:30</span>
+                        </div>
+                        <input id="opt-time" type="range" min="0" max="24" step="0.1" value="10.5" class="w-full cursor-pointer">
+                        <div class="flex items-center justify-between mt-2">
+                            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                                <input id="opt-day-cycle" type="checkbox" checked class="rounded text-sky-500">
+                                Авто-ход времени
+                            </label>
+                            <div class="flex gap-1">
+                                <button data-settime="7" class="px-2 py-0.5 text-[11px] bg-slate-700 hover:bg-slate-600 rounded text-amber-200">Утро</button>
+                                <button data-settime="12" class="px-2 py-0.5 text-[11px] bg-slate-700 hover:bg-slate-600 rounded text-sky-200">День</button>
+                                <button data-settime="18.6" class="px-2 py-0.5 text-[11px] bg-slate-700 hover:bg-slate-600 rounded text-orange-300">Закат</button>
+                                <button data-settime="0" class="px-2 py-0.5 text-[11px] bg-slate-700 hover:bg-slate-600 rounded text-indigo-300">Ночь</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Поле зрения (FOV) -->
+                    <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4">
+                        <div class="flex justify-between text-xs font-bold mb-2">
+                            <span class="text-slate-300">Угол обзора (FOV)</span>
+                            <span id="val-fov" class="text-sky-400">75°</span>
+                        </div>
+                        <input id="opt-fov" type="range" min="60" max="105" step="1" value="75" class="w-full cursor-pointer">
+                        <div class="flex items-center justify-between mt-2.5">
+                            <label class="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+                                <input id="opt-shadows" type="checkbox" checked class="rounded text-sky-500">
+                                Мягкие солнечные тени (RTX Lite)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Генератор мира и сохранение -->
+                    <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-2">
+                                <span class="text-slate-300">Ключ генерации (Seed)</span>
+                                <span id="val-seed" class="font-mono-hud text-emerald-400">#7749</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <input id="opt-seed" type="number" value="7749" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-mono-hud text-white">
+                                <button id="btn-new-world" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-xl whitespace-nowrap transition">
+                                    Новый мир
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-3">
+                            <button id="btn-save-world" class="flex-1 bg-emerald-600/80 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-xl transition">
+                                💾 Сохранить постройки
+                            </button>
+                            <button id="btn-reset-mods" class="bg-rose-600/80 hover:bg-rose-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition" title="Очистить изменения">
+                                Сброс
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Памятка управления -->
+                <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div><span class="text-sky-400 font-bold">W, A, S, D</span> — Ходьба</div>
+                    <div><span class="text-sky-400 font-bold">Shift / Ctrl</span> — Ускорение</div>
+                    <div><span class="text-sky-400 font-bold">Пробел</span> — Прыжок / Вверх</div>
+                    <div><span class="text-sky-400 font-bold">F (или 2x Пробел)</span> — Полёт</div>
+                    <div><span class="text-sky-400 font-bold">ЛКМ</span> — Разрушить блок</div>
+                    <div><span class="text-sky-400 font-bold">ПКМ</span> — Поставить блок</div>
+                    <div><span class="text-sky-400 font-bold">1–9 / Колесо</span> — Блоки</div>
+                    <div><span class="text-sky-400 font-bold">L</span> — Карманный фонарь</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ============================================================================
+    // 1. МАТЕМАТИКА И ШУМ ПЕРЛИНА / СИМПЛЕКСА (Сидируемый генератор рельефа)
+    // ============================================================================
+    class FastPerlin {
+        constructor(seed = 7749) {
+            this.setSeed(seed);
+        }
+        setSeed(seed) {
+            this.seed = Number(seed) || 1337;
+            this.p = new Uint8Array(512);
+            const perm = new Uint8Array(256);
+            for (let i = 0; i < 256; i++) perm[i] = i;
+            let s = this.seed;
+            for (let i = 255; i > 0; i--) {
+                s = (s * 1664525 + 1013904223) >>> 0;
+                const j = s % (i + 1);
+                const tmp = perm[i];
+                perm[i] = perm[j];
+                perm[j] = tmp;
+            }
+            for (let i = 0; i < 512; i++) this.p[i] = perm[i & 255];
+        }
+        fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+        lerp(t, a, b) { return a + t * (b - a); }
+        grad2(hash, x, y) {
+            const h = hash & 7;
+            const u = h < 4 ? x : y;
+            const v = h < 4 ? y : x;
+            return ((h & 1) ? -u : u) + ((h & 2) ? -2.0 * v : 2.0 * v);
+        }
+        noise2D(x, y) {
+            const X = Math.floor(x) & 255;
+            const Y = Math.floor(y) & 255;
+            x -= Math.floor(x);
+            y -= Math.floor(y);
+            const u = this.fade(x);
+            const v = this.fade(y);
+            const A = this.p[X] + Y, B = this.p[X + 1] + Y;
+            return this.lerp(v,
+                this.lerp(u, this.grad2(this.p[A], x, y), this.grad2(this.p[B], x - 1, y)),
+                this.lerp(u, this.grad2(this.p[A + 1], x, y - 1), this.grad2(this.p[B + 1], x - 1, y - 1))
+            ) * 0.45;
+        }
+        fbm2D(x, y, octaves = 4, persistence = 0.5, lacunarity = 2.0) {
+            let total = 0, frequency = 1, amplitude = 1, maxValue = 0;
+            for (let i = 0; i < octaves; i++) {
+                total += this.noise2D(x * frequency, y * frequency) * amplitude;
+                maxValue += amplitude;
+                amplitude *= persistence;
+                frequency *= lacunarity;
+            }
+            return total / maxValue;
+        }
+        hash2D(x, z) {
+            let n = Math.imul(x, 374761393) + Math.imul(z, 668265263) + Math.imul(this.seed, 1442695041);
+            n = (n ^ (n >>> 13)) >>> 0;
+            n = Math.imul(n, 1274126177) >>> 0;
+            return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+        }
     }
 
-    // Экспорт таблицы в CSV (открывается в Excel и Google Sheets)
-    function exportToCSV() {
-      if (records.length === 0) {
-        showToast('Таблица пуста — нечего экспортировать');
-        return;
-      }
+    // ============================================================================
+    // 2. СИНТЕЗАТОР ЗВУКОВ WEB AUDIO API (Без внешних файлов)
+    // ============================================================================
+    class SoundEngine {
+        constructor() {
+            this.ctx = null;
+        }
+        init() {
+            if (!this.ctx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) this.ctx = new AudioCtx();
+            }
+            if (this.ctx && this.ctx.state === 'suspended') {
+                this.ctx.resume();
+            }
+        }
+        playBlockSound(type = 'stone', action = 'break') {
+            this.init();
+            if (!this.ctx) return;
+            const now = this.ctx.currentTime;
+            const dur = action === 'break' ? 0.14 : (action === 'place' ? 0.09 : 0.055);
+            const gain = this.ctx.createGain();
 
-      const headers = ['ID', 'Событие', 'Пользователь', 'Email', 'Роль', 'Время'];
-      const rows = records.map(r => [r.id, r.type, r.name, r.email, r.role, r.timestamp]);
+            // Создаём шумовой буфер для хруста травы/камня/песка
+            const bufferSize = Math.floor(this.ctx.sampleRate * dur);
+            const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.45));
+            }
 
-      const csvContent = '\uFEFF' + [headers, ...rows]
-        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))
-        .join('\n');
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `nebula_users_${new Date().toISOString().slice(0, 10)}.csv`;
-      link.click();
-      URL.revokeObjectURL(url);
+            const filter = this.ctx.createBiquadFilter();
+            if (type === 'grass' || type === 'leaves') {
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(950 + Math.random() * 250, now);
+                filter.Q.setValueAtTime(1.8, now);
+            } else if (type === 'wood') {
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(520 + Math.random() * 140, now);
+            } else if (type === 'glass') {
+                filter.type = 'highpass';
+                filter.frequency.setValueAtTime(2200, now);
+            } else if (type === 'water') {
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(480, now);
+            } else {
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(750 + Math.random() * 200, now);
+            }
+
+            const vol = action === 'step' ? 0.09 : 0.25;
+            gain.gain.setValueAtTime(vol, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.ctx.destination);
+            noise.start(now);
+        }
     }
 
-    // Очистка таблицы
-    function clearTable() {
-      records = [];
-      localStorage.removeItem(STORAGE_KEY);
-      renderTable();
-      showToast('Таблица очищена');
+    const soundFX = new SoundEngine();
+
+    // ============================================================================
+    // 3. ОПРЕДЕЛЕНИЕ БЛОКОВ И ПРОЦЕДУРНЫЙ АТЛАС ТЕКСТУР + КАРТ РЕЛЬЕФА (BUMP)
+    // ============================================================================
+    const BLOCK = {
+        AIR: 0,
+        GRASS: 1,
+        DIRT: 2,
+        STONE: 3,
+        COBBLESTONE: 4,
+        OAK_LOG: 5,
+        OAK_PLANKS: 6,
+        BRICKS: 7,
+        GLASS: 8,
+        GLOWSTONE: 9,
+        SAND: 10,
+        OAK_LEAVES: 11,
+        WATER: 12,
+        COAL_ORE: 13,
+        SNOW: 14,
+        BIRCH_LOG: 15
+    };
+
+    // Индексы тайлов в атласе 4x4 (каждый тайл 32x32 пикселя)
+    const TILE = {
+        GRASS_TOP: 0,
+        GRASS_SIDE: 1,
+        DIRT: 2,
+        STONE: 3,
+        COBBLE: 4,
+        OAK_SIDE: 5,
+        OAK_TOP: 6,
+        PLANKS: 7,
+        BRICKS: 8,
+        GLASS: 9,
+        GLOWSTONE: 10,
+        SAND: 11,
+        LEAVES: 12,
+        WATER: 13,
+        COAL_ORE: 14,
+        SNOW_BIRCH: 15
+    };
+
+    const BLOCK_INFO = {
+        [BLOCK.GRASS]:       { name: 'Дёрн (Трава)', sound: 'grass',  faces: { top: TILE.GRASS_TOP, bottom: TILE.DIRT, side: TILE.GRASS_SIDE } },
+        [BLOCK.DIRT]:        { name: 'Земля',        sound: 'grass',  faces: { top: TILE.DIRT, bottom: TILE.DIRT, side: TILE.DIRT } },
+        [BLOCK.STONE]:       { name: 'Камень',       sound: 'stone',  faces: { top: TILE.STONE, bottom: TILE.STONE, side: TILE.STONE } },
+        [BLOCK.COBBLESTONE]: { name: 'Булыжник',     sound: 'stone',  faces: { top: TILE.COBBLE, bottom: TILE.COBBLE, side: TILE.COBBLE } },
+        [BLOCK.OAK_LOG]:     { name: 'Дубовое бревно',sound: 'wood',  faces: { top: TILE.OAK_TOP, bottom: TILE.OAK_TOP, side: TILE.OAK_SIDE } },
+        [BLOCK.OAK_PLANKS]:  { name: 'Дубовые доски',sound: 'wood',   faces: { top: TILE.PLANKS, bottom: TILE.PLANKS, side: TILE.PLANKS } },
+        [BLOCK.BRICKS]:      { name: 'Кирпичная кладка', sound: 'stone', faces: { top: TILE.BRICKS, bottom: TILE.BRICKS, side: TILE.BRICKS } },
+        [BLOCK.GLASS]:       { name: 'Кварцевое стекло', sound: 'glass', transparent: true, faces: { top: TILE.GLASS, bottom: TILE.GLASS, side: TILE.GLASS } },
+        [BLOCK.GLOWSTONE]:   { name: 'Светокамень',  sound: 'glass',  light: true, faces: { top: TILE.GLOWSTONE, bottom: TILE.GLOWSTONE, side: TILE.GLOWSTONE } },
+        [BLOCK.SAND]:        { name: 'Морской песок',sound: 'grass',  faces: { top: TILE.SAND, bottom: TILE.SAND, side: TILE.SAND } },
+        [BLOCK.OAK_LEAVES]:  { name: 'Листва дуба',  sound: 'leaves', transparent: true, faces: { top: TILE.LEAVES, bottom: TILE.LEAVES, side: TILE.LEAVES } },
+        [BLOCK.WATER]:       { name: 'Вода',         sound: 'water',  liquid: true, faces: { top: TILE.WATER, bottom: TILE.WATER, side: TILE.WATER } },
+        [BLOCK.COAL_ORE]:    { name: 'Угольная руда',sound: 'stone',  faces: { top: TILE.COAL_ORE, bottom: TILE.COAL_ORE, side: TILE.COAL_ORE } },
+        [BLOCK.SNOW]:        { name: 'Горный снег',  sound: 'grass',  faces: { top: TILE.SNOW_BIRCH, bottom: TILE.DIRT, side: TILE.SNOW_BIRCH } },
+        [BLOCK.BIRCH_LOG]:   { name: 'Берёза',       sound: 'wood',   faces: { top: TILE.OAK_TOP, bottom: TILE.OAK_TOP, side: TILE.SNOW_BIRCH } }
+    };
+
+    // 9 блоков в быстром доступе Хотбара
+    const HOTBAR_BLOCKS = [
+        BLOCK.GRASS,
+        BLOCK.COBBLESTONE,
+        BLOCK.OAK_PLANKS,
+        BLOCK.OAK_LOG,
+        BLOCK.BRICKS,
+        BLOCK.GLASS,
+        BLOCK.GLOWSTONE,
+        BLOCK.SAND,
+        BLOCK.OAK_LEAVES
+    ];
+
+    // Генерация детализированного 32x32 атласа текстур + Bump-атласа + иконок для хотбара
+    function createTextureAtlases() {
+        const tileSize = 32;
+        const gridCols = 4;
+        const atlasSize = tileSize * gridCols; // 128x128
+
+        const colorCanvas = document.createElement('canvas');
+        colorCanvas.width = atlasSize;
+        colorCanvas.height = atlasSize;
+        const ctx = colorCanvas.getContext('2d');
+
+        const bumpCanvas = document.createElement('canvas');
+        bumpCanvas.width = atlasSize;
+        bumpCanvas.height = atlasSize;
+        const bctx = bumpCanvas.getContext('2d');
+
+        // Детерминированный шум для пиксель-арта
+        let pSeed = 918273;
+        const rand = () => {
+            pSeed = (pSeed * 1664525 + 1013904223) >>> 0;
+            return (pSeed & 0xffff) / 0x10000;
+        };
+
+        const drawTile = (tileIndex, pixelFn) => {
+            const tx = (tileIndex % gridCols) * tileSize;
+            const ty = Math.floor(tileIndex / gridCols) * tileSize;
+            const img = ctx.createImageData(tileSize, tileSize);
+            const bImg = bctx.createImageData(tileSize, tileSize);
+
+            for (let y = 0; y < tileSize; y++) {
+                for (let x = 0; x < tileSize; x++) {
+                    const idx = (y * tileSize + x) * 4;
+                    const { r, g, b, a = 255, h = 128 } = pixelFn(x, y, rand());
+                    img.data[idx]     = Math.max(0, Math.min(255, r));
+                    img.data[idx + 1] = Math.max(0, Math.min(255, g));
+                    img.data[idx + 2] = Math.max(0, Math.min(255, b));
+                    img.data[idx + 3] = a;
+
+                    bImg.data[idx] = bImg.data[idx + 1] = bImg.data[idx + 2] = Math.max(0, Math.min(255, h));
+                    bImg.data[idx + 3] = 255;
+                }
+            }
+            ctx.putImageData(img, tx, ty);
+            bctx.putImageData(bImg, tx, ty);
+        };
+
+        // 0: Трава сверху (сочная зелень с травинками)
+        drawTile(TILE.GRASS_TOP, (x, y, n) => {
+            const blade = Math.sin(x * 0.7 + y * 0.3) * 8 + (n - 0.5) * 26;
+            return { r: 74 + blade * 0.7, g: 158 + blade, b: 54 + blade * 0.5, h: 120 + blade * 2 };
+        });
+
+        // 2: Земля
+        drawTile(TILE.DIRT, (x, y, n) => {
+            const pebble = ((x * 7 + y * 13) % 17 === 0) ? 18 : 0;
+            const d = (n - 0.5) * 28 + pebble;
+            return { r: 124 + d, g: 86 + d * 0.8, b: 56 + d * 0.6, h: 110 + d * 2 };
+        });
+
+        // 1: Трава сбоку
+        drawTile(TILE.GRASS_SIDE, (x, y, n) => {
+            const grassEdge = 5 + Math.floor(Math.sin(x * 0.65) * 2.5 + Math.cos(x * 1.4) * 1.8);
+            if (y < grassEdge) {
+                const blade = (n - 0.5) * 24;
+                return { r: 74 + blade * 0.7, g: 156 + blade, b: 54 + blade * 0.5, h: 165 + blade };
+            }
+            const d = (n - 0.5) * 28;
+            return { r: 124 + d, g: 86 + d * 0.8, b: 56 + d * 0.6, h: 105 + d * 2 };
+        });
+
+        // 3: Камень
+        drawTile(TILE.STONE, (x, y, n) => {
+            const strata = Math.sin(y * 0.55 + Math.sin(x * 0.3) * 2) * 10;
+            const v = 128 + strata + (n - 0.5) * 22;
+            return { r: v, g: v + 2, b: v + 5, h: v };
+        });
+
+        // 4: Булыжник
+        drawTile(TILE.COBBLE, (x, y, n) => {
+            const cx = Math.sin(x * 0.55) * Math.cos(y * 0.55);
+            const mortar = Math.abs(cx) < 0.16 ? -34 : 10;
+            const v = 115 + mortar + (n - 0.5) * 26;
+            return { r: v, g: v, b: v + 4, h: mortar < 0 ? 40 : 185 + (n - 0.5) * 30 };
+        });
+
+        // 5: Дубовое бревно сбоку
+        drawTile(TILE.OAK_SIDE, (x, y, n) => {
+            const groove = Math.sin(x * 0.9 + Math.sin(y * 0.25)) * 16;
+            const d = groove + (n - 0.5) * 16;
+            return { r: 104 + d, g: 78 + d * 0.8, b: 46 + d * 0.5, h: 128 + groove * 3 };
+        });
+
+        // 6: Дубовое бревно сверху (годовые кольца)
+        drawTile(TILE.OAK_TOP, (x, y, n) => {
+            const dx = x - 15.5, dy = y - 15.5;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > 13.5) {
+                return { r: 95, g: 70, b: 42, h: 90 };
+            }
+            const rings = Math.sin(dist * 1.65) * 14 + (n - 0.5) * 10;
+            return { r: 166 + rings, g: 132 + rings * 0.85, b: 84 + rings * 0.6, h: 135 + rings * 2 };
+        });
+
+        // 7: Дубовые доски
+        drawTile(TILE.PLANKS, (x, y, n) => {
+            const plankRow = y % 8 === 0;
+            const joint = (x + Math.floor(y / 8) * 11) % 32 === 0;
+            const seam = (plankRow || joint) ? -28 : 0;
+            const grain = Math.sin(x * 0.35 + y * 0.1) * 7 + (n - 0.5) * 14 + seam;
+            return { r: 178 + grain, g: 138 + grain * 0.85, b: 86 + grain * 0.6, h: seam ? 50 : 150 + grain };
+        });
+
+        // 8: Кирпичная кладка
+        drawTile(TILE.BRICKS, (x, y, n) => {
+            const row = Math.floor(y / 8);
+            const mortarY = (y % 8 === 0);
+            const mortarX = ((x + (row % 2) * 8) % 16 === 0);
+            if (mortarY || mortarX) {
+                const m = 185 + (n - 0.5) * 18;
+                return { r: m, g: m - 4, b: m - 10, h: 55 };
+            }
+            const shade = ((row * 3 + Math.floor(x / 16)) % 3 - 1) * 10 + (n - 0.5) * 20;
+            return { r: 168 + shade, g: 74 + shade * 0.6, b: 58 + shade * 0.5, h: 175 + shade };
+        });
+
+        // 9: Кварцевое стекло
+        drawTile(TILE.GLASS, (x, y, n) => {
+            const border = x < 2 || x >= 30 || y < 2 || y >= 30;
+            const glint = (x + y === 10 || x + y === 11 || x + y === 22) && x > 4 && y > 4 && x < 26 && y < 26;
+            if (border) return { r: 215, g: 242, b: 252, a: 245, h: 210 };
+            if (glint)  return { r: 245, g: 255, b: 255, a: 190, h: 170 };
+            return { r: 180, g: 230, b: 248, a: 45, h: 128 };
+        });
+
+        // 10: Светокамень (Glowstone)
+        drawTile(TILE.GLOWSTONE, (x, y, n) => {
+            const crystal = Math.sin(x * 0.8) * Math.cos(y * 0.8) + (n - 0.5) * 0.7;
+            if (crystal > 0.25) {
+                return { r: 255, g: 244, b: 168, h: 230 };
+            } else if (crystal > -0.15) {
+                return { r: 238, g: 185, b: 72, h: 160 };
+            }
+            return { r: 146, g: 96, b: 36, h: 85 };
+        });
+
+        // 11: Песок
+        drawTile(TILE.SAND, (x, y, n) => {
+            const ripple = Math.sin(x * 0.35 + Math.sin(y * 0.4) * 2) * 8 + (n - 0.5) * 18;
+            return { r: 228 + ripple, g: 212 + ripple, b: 158 + ripple * 0.8, h: 135 + ripple * 2 };
+        });
+
+        // 12: Листва дуба
+        drawTile(TILE.LEAVES, (x, y, n) => {
+            const leaf = Math.sin(x * 0.9) * Math.cos(y * 0.9) + (n - 0.5) * 1.1;
+            const d = (n - 0.5) * 28;
+            return {
+                r: 46 + d * 0.6,
+                g: 126 + d,
+                b: 38 + d * 0.5,
+                a: 255,
+                h: leaf > 0 ? 190 : 85
+            };
+        });
+
+        // 13: Вода
+        drawTile(TILE.WATER, (x, y, n) => {
+            const wave = Math.sin(x * 0.4 + y * 0.4) * 14 + (n - 0.5) * 10;
+            return { r: 28 + wave * 0.5, g: 132 + wave, b: 218 + wave, a: 195, h: 128 + wave * 2 };
+        });
+
+        // 14: Угольная руда
+        drawTile(TILE.COAL_ORE, (x, y, n) => {
+            const spot = Math.sin(x * 0.75) * Math.cos(y * 0.75) > 0.48 && x > 3 && x < 28 && y > 3 && y < 28;
+            if (spot) {
+                const c = 32 + (n - 0.5) * 18;
+                return { r: c, g: c, b: c + 4, h: 65 };
+            }
+            const v = 126 + (n - 0.5) * 22;
+            return { r: v, g: v + 2, b: v + 5, h: 145 };
+        });
+
+        // 15: Горный снег / Берёза
+        drawTile(TILE.SNOW_BIRCH, (x, y, n) => {
+            const s = 240 + (n - 0.5) * 14;
+            return { r: s, g: s + 3, b: 252, h: 140 + (n - 0.5) * 20 };
+        });
+
+        const colorTex = new THREE.CanvasTexture(colorCanvas);
+        colorTex.magFilter = THREE.NearestFilter;
+        colorTex.minFilter = THREE.NearestFilter;
+        colorTex.generateMipmaps = false;
+
+        const bumpTex = new THREE.CanvasTexture(bumpCanvas);
+        bumpTex.magFilter = THREE.NearestFilter;
+        bumpTex.minFilter = THREE.NearestFilter;
+        bumpTex.generateMipmaps = false;
+
+        // Вырезаем отдельные DataURL-иконки для Хотбара
+        const iconURLs = {};
+        const iconCanvas = document.createElement('canvas');
+        iconCanvas.width = tileSize;
+        iconCanvas.height = tileSize;
+        const ictx = iconCanvas.getContext('2d');
+
+        Object.keys(BLOCK_INFO).forEach(id => {
+            const tile = BLOCK_INFO[id].faces.side;
+            const tx = (tile % gridCols) * tileSize;
+            const ty = Math.floor(tile / gridCols) * tileSize;
+            ictx.clearRect(0, 0, tileSize, tileSize);
+            ictx.drawImage(colorCanvas, tx, ty, tileSize, tileSize, 0, 0, tileSize, tileSize);
+            iconURLs[id] = iconCanvas.toDataURL();
+        });
+
+        return { colorTex, bumpTex, iconURLs, gridCols };
     }
 
-    function showToast(message) {
-      toast.textContent = message;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3000);
+    // ============================================================================
+    // 4. ГЕОМЕТРИЯ ВОКСЕЛЕЙ, FACE CULLING И AMBIENT OCCLUSION (VERTEX AO)
+    // ============================================================================
+    const CHUNK_SIZE = 16;
+    const CHUNK_HEIGHT = 48;
+    const SEA_LEVEL = 13;
+
+    // 6 граней куба с локальными вершинами, нормалями и базисом для расчёта AO
+    const FACES = [
+        { // +Y (Верх)
+            dir: [0, 1, 0], faceKey: 'top', shade: 1.0,
+            corners: [
+                { pos: [0, 1, 1], uv: [0, 1], aoDirs: [[-1,1,0], [0,1,1], [-1,1,1]] },
+                { pos: [1, 1, 1], uv: [1, 1], aoDirs: [[1,1,0],  [0,1,1], [1,1,1]] },
+                { pos: [1, 1, 0], uv: [1, 0], aoDirs: [[1,1,0],  [0,1,-1],[1,1,-1]] },
+                { pos: [0, 1, 0], uv: [0, 0], aoDirs: [[-1,1,0], [0,1,-1],[-1,1,-1]] }
+            ]
+        },
+        { // -Y (Низ)
+            dir: [0, -1, 0], faceKey: 'bottom', shade: 0.52,
+            corners: [
+                { pos: [0, 0, 0], uv: [0, 1], aoDirs: [[-1,-1,0],[0,-1,-1],[-1,-1,-1]] },
+                { pos: [1, 0, 0], uv: [1, 1], aoDirs: [[1,-1,0], [0,-1,-1],[1,-1,-1]] },
+                { pos: [1, 0, 1], uv: [1, 0], aoDirs: [[1,-1,0], [0,-1,1], [1,-1,1]] },
+                { pos: [0, 0, 1], uv: [0, 0], aoDirs: [[-1,-1,0],[0,-1,1], [-1,-1,1]] }
+            ]
+        },
+        { // +Z (Юг / Перед)
+            dir: [0, 0, 1], faceKey: 'side', shade: 0.86,
+            corners: [
+                { pos: [0, 0, 1], uv: [0, 0], aoDirs: [[-1,0,1], [0,-1,1], [-1,-1,1]] },
+                { pos: [1, 0, 1], uv: [1, 0], aoDirs: [[1,0,1],  [0,-1,1], [1,-1,1]] },
+                { pos: [1, 1, 1], uv: [1, 1], aoDirs: [[1,0,1],  [0,1,1],  [1,1,1]] },
+                { pos: [0, 1, 1], uv: [0, 1], aoDirs: [[-1,0,1], [0,1,1],  [-1,1,1]] }
+            ]
+        },
+        { // -Z (Север / Зад)
+            dir: [0, 0, -1], faceKey: 'side', shade: 0.82,
+            corners: [
+                { pos: [1, 0, 0], uv: [0, 0], aoDirs: [[1,0,-1], [0,-1,-1],[1,-1,-1]] },
+                { pos: [0, 0, 0], uv: [1, 0], aoDirs: [[-1,0,-1],[0,-1,-1],[-1,-1,-1]] },
+                { pos: [0, 1, 0], uv: [1, 1], aoDirs: [[-1,0,-1],[0,1,-1], [-1,1,-1]] },
+                { pos: [1, 1, 0], uv: [0, 1], aoDirs: [[1,0,-1], [0,1,-1], [1,1,-1]] }
+            ]
+        },
+        { // +X (Восток / Право)
+            dir: [1, 0, 0], faceKey: 'side', shade: 0.74,
+            corners: [
+                { pos: [1, 0, 1], uv: [0, 0], aoDirs: [[1,0,1],  [1,-1,0], [1,-1,1]] },
+                { pos: [1, 0, 0], uv: [1, 0], aoDirs: [[1,0,-1], [1,-1,0], [1,-1,-1]] },
+                { pos: [1, 1, 0], uv: [1, 1], aoDirs: [[1,0,-1], [1,1,0],  [1,1,-1]] },
+                { pos: [1, 1, 1], uv: [0, 1], aoDirs: [[1,0,1],  [1,1,0],  [1,1,1]] }
+            ]
+        },
+        { // -X (Запад / Лево)
+            dir: [-1, 0, 0], faceKey: 'side', shade: 0.74,
+            corners: [
+                { pos: [0, 0, 0], uv: [0, 0], aoDirs: [[-1,0,-1],[-1,-1,0],[-1,-1,-1]] },
+                { pos: [0, 0, 1], uv: [1, 0], aoDirs: [[-1,0,1], [-1,-1,0],[-1,-1,1]] },
+                { pos: [0, 1, 1], uv: [1, 1], aoDirs: [[-1,0,1], [-1,1,0], [-1,1,1]] },
+                { pos: [0, 1, 0], uv: [0, 1], aoDirs: [[-1,0,-1],[-1,1,0], [-1,1,-1]] }
+            ]
+        }
+    ];
+
+    const AO_CURVE = [0.40, 0.62, 0.82, 1.0];
+
+    // ============================================================================
+    // 5. МИР И МЕНЕДЖЕР ЧАНКОВ
+    // ============================================================================
+    class VoxelWorld {
+        constructor(scene, atlases) {
+            this.scene = scene;
+            this.atlases = atlases;
+            this.perlin = new FastPerlin(7749);
+            this.chunks = new Map();
+            this.mods = new Map(); // Пользовательские изменения мира
+            this.glowBlocks = new Set(); // Координаты светокамней
+
+            // Материалы чанков (Всего 1 вызов отрисовки на тип геометрии в чанке!)
+            this.opaqueMat = new THREE.MeshStandardMaterial({
+                map: atlases.colorTex,
+                bumpMap: atlases.bumpTex,
+                bumpScale: 0.038,
+                roughness: 0.84,
+                metalness: 0.04,
+                vertexColors: true
+            });
+
+            this.transparentMat = new THREE.MeshStandardMaterial({
+                map: atlases.colorTex,
+                bumpMap: atlases.bumpTex,
+                bumpScale: 0.025,
+                roughness: 0.3,
+                metalness: 0.1,
+                transparent: true,
+                alphaTest: 0.15,
+                vertexColors: true
+            });
+
+            this.waterMat = new THREE.MeshStandardMaterial({
+                map: atlases.colorTex,
+                roughness: 0.12,
+                metalness: 0.25,
+                transparent: true,
+                opacity: 0.76,
+                vertexColors: true
+            });
+
+            this.loadSavedState();
+        }
+
+        chunkKey(cx, cz) { return `${cx},${cz}`; }
+        blockKey(x, y, z) { return `${x},${y},${z}`; }
+
+        loadSavedState() {
+            try {
+                const savedSeed = localStorage.getItem('voxelcraft_seed');
+                if (savedSeed) {
+                    this.perlin.setSeed(Number(savedSeed));
+                    document.getElementById('opt-seed').value = savedSeed;
+                    document.getElementById('val-seed').textContent = `#${savedSeed}`;
+                }
+                const savedMods = localStorage.getItem('voxelcraft_mods');
+                if (savedMods) {
+                    const parsed = JSON.parse(savedMods);
+                    Object.keys(parsed).forEach(k => {
+                        const v = parsed[k];
+                        this.mods.set(k, v);
+                        if (v === BLOCK.GLOWSTONE) this.glowBlocks.add(k);
+                    });
+                }
+            } catch (e) {
+                console.warn('Не удалось загрузить сохранение из localStorage:', e);
+            }
+        }
+
+        saveState() {
+            try {
+                localStorage.setItem('voxelcraft_seed', String(this.perlin.seed));
+                const obj = {};
+                this.mods.forEach((v, k) => { obj[k] = v; });
+                localStorage.setItem('voxelcraft_mods', JSON.stringify(obj));
+            } catch (e) {
+                console.warn('Не удалось сохранить мир:', e);
+            }
+        }
+
+        // Высота поверхности и биом в точке (wx, wz)
+        getColumnInfo(wx, wz) {
+            const cont = this.perlin.fbm2D(wx * 0.011, wz * 0.011, 4, 0.5, 2.0);
+            const detail = this.perlin.fbm2D(wx * 0.045 + 100, wz * 0.045 + 100, 2, 0.5, 2.0);
+            const mountainMask = Math.max(0, this.perlin.noise2D(wx * 0.008 - 50, wz * 0.008 - 50) + 0.15);
+            const humid = this.perlin.noise2D(wx * 0.012 + 300, wz * 0.012 + 300);
+
+            let height = Math.floor(16 + cont * 22 + detail * 6 + mountainMask * mountainMask * 38);
+            height = Math.max(4, Math.min(CHUNK_HEIGHT - 8, height));
+
+            let biome = 'Изумрудные равнины';
+            if (height <= SEA_LEVEL + 1) biome = 'Песчаное побережье';
+            else if (height >= 28) biome = 'Скалистые вершины';
+            else if (humid > 0.06) biome = 'Древний дубовый лес';
+
+            return { height, biome, humid };
+        }
+
+        generateChunkData(cx, cz) {
+            const data = new Uint8Array(CHUNK_SIZE * CHUNK_HEIGHT * CHUNK_SIZE);
+            const idx = (lx, y, lz) => (y * CHUNK_SIZE + lz) * CHUNK_SIZE + lx;
+
+            for (let lx = 0; lx < CHUNK_SIZE; lx++) {
+                for (let lz = 0; lz < CHUNK_SIZE; lz++) {
+                    const wx = cx * CHUNK_SIZE + lx;
+                    const wz = cz * CHUNK_SIZE + lz;
+                    const { height } = this.getColumnInfo(wx, wz);
+
+                    for (let y = 0; y < CHUNK_HEIGHT; y++) {
+                        let block = BLOCK.AIR;
+                        if (y === 0) {
+                            block = BLOCK.COBBLESTONE;
+                        } else if (y < height - 3) {
+                            // Камень и угольная руда
+                            const oreHash = this.perlin.hash2D(wx * 13 + y * 31, wz * 17 - y * 19);
+                            block = oreHash < 0.075 ? BLOCK.COAL_ORE : BLOCK.STONE;
+                        } else if (y < height) {
+                            block = height <= SEA_LEVEL + 1 ? BLOCK.SAND : BLOCK.DIRT;
+                        } else if (y === height) {
+                            if (height <= SEA_LEVEL + 1) block = BLOCK.SAND;
+                            else if (height >= 31) block = BLOCK.SNOW;
+                            else block = BLOCK.GRASS;
+                        } else if (y <= SEA_LEVEL) {
+                            block = BLOCK.WATER;
+                        }
+                        data[idx(lx, y, lz)] = block;
+                    }
+                }
+            }
+
+            // Процедурные деревья (с отступом от границ чанка для кроны)
+            for (let lx = 3; lx < CHUNK_SIZE - 3; lx++) {
+                for (let lz = 3; lz < CHUNK_SIZE - 3; lz++) {
+                    const wx = cx * CHUNK_SIZE + lx;
+                    const wz = cz * CHUNK_SIZE + lz;
+                    const { height, humid } = this.getColumnInfo(wx, wz);
+
+                    if (height > SEA_LEVEL + 2 && height < 27) {
+                        const treeChance = humid > 0.06 ? 0.022 : 0.006;
+                        const r = this.perlin.hash2D(wx, wz);
+                        if (r < treeChance) {
+                            const trunkH = 4 + (Math.floor(r * 9973) % 2);
+                            const logType = (Math.floor(r * 1000) % 5 === 0) ? BLOCK.BIRCH_LOG : BLOCK.OAK_LOG;
+                            // Ствол
+                            for (let ty = 1; ty <= trunkH; ty++) {
+                                if (height + ty < CHUNK_HEIGHT - 2) {
+                                    data[idx(lx, height + ty, lz)] = logType;
+                                }
+                            }
+                            // Крона
+                            for (let ox = -2; ox <= 2; ox++) {
+                                for (let oz = -2; oz <= 2; oz++) {
+                                    for (let oy = trunkH - 1; oy <= trunkH + 2; oy++) {
+                                        const dist = Math.abs(ox) + Math.abs(oz);
+                                        if (oy === trunkH + 2 && dist > 1) continue;
+                                        if (dist === 4 && oy < trunkH + 1) continue;
+                                        if (ox === 0 && oz === 0 && oy <= trunkH) continue;
+                                        const py = height + oy;
+                                        if (py < CHUNK_HEIGHT) {
+                                            data[idx(lx + ox, py, lz + oz)] = BLOCK.OAK_LEAVES;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Применяем сохранённые постройки игрока
+            for (let lx = 0; lx < CHUNK_SIZE; lx++) {
+                for (let lz = 0; lz < CHUNK_SIZE; lz++) {
+                    const wx = cx * CHUNK_SIZE + lx;
+                    const wz = cz * CHUNK_SIZE + lz;
+                    for (let y = 0; y < CHUNK_HEIGHT; y++) {
+                        const mKey = this.blockKey(wx, y, wz);
+                        if (this.mods.has(mKey)) {
+                            data[idx(lx, y, lz)] = this.mods.get(mKey);
+                        }
+                    }
+                }
+            }
+
+            return data;
+        }
+
+        getChunk(cx, cz) {
+            const key = this.chunkKey(cx, cz);
+            if (!this.chunks.has(key)) {
+                this.chunks.set(key, {
+                    cx, cz,
+                    data: this.generateChunkData(cx, cz),
+                    opaqueMesh: null,
+                    transMesh: null,
+                    waterMesh: null,
+                    dirty: true
+                });
+            }
+            return this.chunks.get(key);
+        }
+
+        getBlock(wx, wy, wz) {
+            if (wy < 0 || wy >= CHUNK_HEIGHT) return BLOCK.AIR;
+            const cx = Math.floor(wx / CHUNK_SIZE);
+            const cz = Math.floor(wz / CHUNK_SIZE);
+            const lx = ((wx % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
+            const lz = ((wz % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
+            const chunk = this.getChunk(cx, cz);
+            return chunk.data[(wy * CHUNK_SIZE + lz) * CHUNK_SIZE + lx];
+        }
+
+        setBlock(wx, wy, wz, blockId) {
+            if (wy <= 0 || wy >= CHUNK_HEIGHT) return false;
+            const cx = Math.floor(wx / CHUNK_SIZE);
+            const cz = Math.floor(wz / CHUNK_SIZE);
+            const lx = ((wx % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
+            const lz = ((wz % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
+            const chunk = this.getChunk(cx, cz);
+
+            chunk.data[(wy * CHUNK_SIZE + lz) * CHUNK_SIZE + lx] = blockId;
+            const bKey = this.blockKey(wx, wy, wz);
+            this.mods.set(bKey, blockId);
+
+            if (blockId === BLOCK.GLOWSTONE) this.glowBlocks.add(bKey);
+            else this.glowBlocks.delete(bKey);
+
+            chunk.dirty = true;
+            // Если блок на границе чанка, обновляем соседний чанк для корректного AO и куллинга
+            if (lx === 0) this.getChunk(cx - 1, cz).dirty = true;
+            if (lx === CHUNK_SIZE - 1) this.getChunk(cx + 1, cz).dirty = true;
+            if (lz === 0) this.getChunk(cx, cz - 1).dirty = true;
+            if (lz === CHUNK_SIZE - 1) this.getChunk(cx, cz + 1).dirty = true;
+
+            this.rebuildDirtyChunksAround(cx, cz);
+            return true;
+        }
+
+        isSolidForAO(wx, wy, wz) {
+            const b = this.getBlock(wx, wy, wz);
+            if (b === BLOCK.AIR || b === BLOCK.WATER || b === BLOCK.GLASS) return false;
+            return true;
+        }
+
+        isSolidCollider(wx, wy, wz) {
+            const b = this.getBlock(wx, wy, wz);
+            return b !== BLOCK.AIR && b !== BLOCK.WATER;
+        }
+
+        // Построение оптимизированной геометрии чанка с Face Culling и Vertex AO
+        buildChunkMesh(chunk) {
+            const { cx, cz, data } = chunk;
+            const gridCols = this.atlases.gridCols;
+            const uvStep = 1.0 / gridCols;
+            const uvPad = 0.0015; // Защита от протекания соседних тайлов в атласе
+
+            const createBuffers = () => ({
+                positions: [],
+                normals: [],
+                uvs: [],
+                colors: [],
+                indices: [],
+                vertCount: 0
+            });
+
+            const opaqueBuf = createBuffers();
+            const transBuf  = createBuffers();
+            const waterBuf  = createBuffers();
+
+            const wxBase = cx * CHUNK_SIZE;
+            const wzBase = cz * CHUNK_SIZE;
+
+            for (let y = 0; y < CHUNK_HEIGHT; y++) {
+                for (let lz = 0; lz < CHUNK_SIZE; lz++) {
+                    for (let lx = 0; lx < CHUNK_SIZE; lx++) {
+                        const block = data[(y * CHUNK_SIZE + lz) * CHUNK_SIZE + lx];
+                        if (block === BLOCK.AIR) continue;
+
+                        const info = BLOCK_INFO[block];
+                        if (!info) continue;
+
+                        const wx = wxBase + lx;
+                        const wz = wzBase + lz;
+
+                        const isWater = !!info.liquid;
+                        const isTrans = !!info.transparent;
+                        const targetBuf = isWater ? waterBuf : (isTrans ? transBuf : opaqueBuf);
+
+                        for (let f = 0; f < 6; f++) {
+                            const face = FACES[f];
+                            const nx = wx + face.dir[0];
+                            const ny = y  + face.dir[1];
+                            const nz = wz + face.dir[2];
+
+                            const neighbor = this.getBlock(nx, ny, nz);
+
+                            // Face Culling: рисуем грань только если она видна
+                            if (isWater) {
+                                // У воды рисуем только верхнюю грань на границе с воздухом
+                                if (f !== 0 || neighbor !== BLOCK.AIR) continue;
+                            } else if (isTrans) {
+                                if (neighbor === block) continue;
+                                const nInfo = BLOCK_INFO[neighbor];
+                                if (neighbor !== BLOCK.AIR && nInfo && !nInfo.transparent && !nInfo.liquid) continue;
+                            } else {
+                                const nInfo = BLOCK_INFO[neighbor];
+                                if (neighbor !== BLOCK.AIR && nInfo && !nInfo.transparent && !nInfo.liquid) continue;
+                            }
+
+                            const tileIndex = info.faces[face.faceKey];
+                            const u0 = (tileIndex % gridCols) * uvStep + uvPad;
+                            const v0 = 1.0 - (Math.floor(tileIndex / gridCols) + 1) * uvStep + uvPad;
+                            const u1 = u0 + uvStep - uvPad * 2;
+                            const v1 = v0 + uvStep - uvPad * 2;
+
+                            const aoValues = [];
+                            const vIndex = targetBuf.vertCount;
+
+                            for (let c = 0; c < 4; c++) {
+                                const corner = face.corners[c];
+                                let px = wx + corner.pos[0];
+                                let py = y  + corner.pos[1];
+                                let pz = wz + corner.pos[2];
+
+                                // Слегка опускаем гладь воды для реалистичного берега
+                                if (isWater && corner.pos[1] === 1) {
+                                    py -= 0.12;
+                                }
+
+                                targetBuf.positions.push(px, py, pz);
+                                targetBuf.normals.push(face.dir[0], face.dir[1], face.dir[2]);
+
+                                const u = corner.uv[0] === 0 ? u0 : u1;
+                                const v = corner.uv[1] === 0 ? v0 : v1;
+                                targetBuf.uvs.push(u, v);
+
+                                // Вычисление Voxel Ambient Occlusion для угла
+                                let aoLevel = 3;
+                                if (!isWater && !info.light) {
+                                    const s1 = this.isSolidForAO(wx + corner.aoDirs[0][0], y + corner.aoDirs[0][1], wz + corner.aoDirs[0][2]) ? 1 : 0;
+                                    const s2 = this.isSolidForAO(wx + corner.aoDirs[1][0], y + corner.aoDirs[1][1], wz + corner.aoDirs[1][2]) ? 1 : 0;
+                                    const cn = this.isSolidForAO(wx + corner.aoDirs[2][0], y + corner.aoDirs[2][1], wz + corner.aoDirs[2][2]) ? 1 : 0;
+                                    aoLevel = (s1 && s2) ? 0 : (3 - (s1 + s2 + cn));
+                                }
+                                aoValues.push(aoLevel);
+
+                                const brightness = info.light ? 1.15 : (AO_CURVE[aoLevel] * face.shade);
+                                targetBuf.colors.push(brightness, brightness, brightness);
+                            }
+
+                            // Защита от диагонального артефакта интерполяции AO
+                            if (aoValues[0] + aoValues[2] > aoValues[1] + aoValues[3]) {
+                                targetBuf.indices.push(
+                                    vIndex, vIndex + 1, vIndex + 2,
+                                    vIndex, vIndex + 2, vIndex + 3
+                                );
+                            } else {
+                                targetBuf.indices.push(
+                                    vIndex + 1, vIndex + 2, vIndex + 3,
+                                    vIndex + 1, vIndex + 3, vIndex
+                                );
+                            }
+
+                            targetBuf.vertCount += 4;
+                        }
+                    }
+                }
+            }
+
+            const applyMesh = (oldMesh, buf, material, castShadow, receiveShadow) => {
+                if (oldMesh) {
+                    this.scene.remove(oldMesh);
+                    oldMesh.geometry.dispose();
+                }
+                if (buf.vertCount === 0) return null;
+
+                const geo = new THREE.BufferGeometry();
+                geo.setAttribute('position', new THREE.Float32BufferAttribute(buf.positions, 3));
+                geo.setAttribute('normal',   new THREE.Float32BufferAttribute(buf.normals, 3));
+                geo.setAttribute('uv',       new THREE.Float32BufferAttribute(buf.uvs, 2));
+                geo.setAttribute('color',    new THREE.Float32BufferAttribute(buf.colors, 3));
+                geo.setIndex(buf.indices);
+                geo.computeBoundingSphere();
+
+                const mesh = new THREE.Mesh(geo, material);
+                mesh.castShadow = castShadow;
+                mesh.receiveShadow = receiveShadow;
+                this.scene.add(mesh);
+                return mesh;
+            };
+
+            chunk.opaqueMesh = applyMesh(chunk.opaqueMesh, opaqueBuf, this.opaqueMat, true, true);
+            chunk.transMesh  = applyMesh(chunk.transMesh,  transBuf,  this.transparentMat, true, true);
+            chunk.waterMesh  = applyMesh(chunk.waterMesh,  waterBuf,  this.waterMat, false, true);
+            chunk.dirty = false;
+        }
+
+        rebuildDirtyChunksAround(cx, cz) {
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dz = -1; dz <= 1; dz++) {
+                    const ch = this.getChunk(cx + dx, cz + dz);
+                    if (ch.dirty) this.buildChunkMesh(ch);
+                }
+            }
+        }
+
+        updateActiveChunks(playerX, playerZ, radius) {
+            const pcx = Math.floor(playerX / CHUNK_SIZE);
+            const pcz = Math.floor(playerZ / CHUNK_SIZE);
+
+            // Строим максимум 2 чанка за кадр для идеально плавных 60 FPS без фризов
+            let builtThisFrame = 0;
+            let activeCount = 0;
+
+            for (let dx = -radius; dx <= radius; dx++) {
+                for (let dz = -radius; dz <= radius; dz++) {
+                    if (dx * dx + dz * dz > (radius + 0.5) * (radius + 0.5)) continue;
+                    const ch = this.getChunk(pcx + dx, pcz + dz);
+                    activeCount++;
+                    if (ch.dirty && builtThisFrame < 2) {
+                        this.buildChunkMesh(ch);
+                        builtThisFrame++;
+                    }
+                    if (ch.opaqueMesh) ch.opaqueMesh.visible = true;
+                    if (ch.transMesh)  ch.transMesh.visible = true;
+                    if (ch.waterMesh)  ch.waterMesh.visible = true;
+                }
+            }
+
+            // Скрываем далёкие чанки
+            this.chunks.forEach(ch => {
+                const distSq = (ch.cx - pcx) * (ch.cx - pcx) + (ch.cz - pcz) * (ch.cz - pcz);
+                if (distSq > (radius + 1.5) * (radius + 1.5)) {
+                    if (ch.opaqueMesh) ch.opaqueMesh.visible = false;
+                    if (ch.transMesh)  ch.transMesh.visible = false;
+                    if (ch.waterMesh)  ch.waterMesh.visible = false;
+                }
+            });
+
+            return activeCount;
+        }
+
+        regenerateAll(newSeed, resetMods = false) {
+            this.chunks.forEach(ch => {
+                if (ch.opaqueMesh) { this.scene.remove(ch.opaqueMesh); ch.opaqueMesh.geometry.dispose(); }
+                if (ch.transMesh)  { this.scene.remove(ch.transMesh);  ch.transMesh.geometry.dispose(); }
+                if (ch.waterMesh)  { this.scene.remove(ch.waterMesh);  ch.waterMesh.geometry.dispose(); }
+            });
+            this.chunks.clear();
+            if (resetMods) {
+                this.mods.clear();
+                this.glowBlocks.clear();
+                localStorage.removeItem('voxelcraft_mods');
+            }
+            this.perlin.setSeed(newSeed);
+            this.saveState();
+        }
     }
 
-    function escapeHtml(str) {
-      return String(str).replace(/[&<>"']/g, s => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-      }[s]));
+    // ============================================================================
+    // 6. ТОЧНЫЙ ВОКСЕЛЬНЫЙ DDA-РЕЙКАСТЕР (Выбор блока на дистанции 7.5 м)
+    // ============================================================================
+    function raycastVoxel(world, origin, direction, maxDist = 7.5) {
+        let x = Math.floor(origin.x);
+        let y = Math.floor(origin.y);
+        let z = Math.floor(origin.z);
+
+        const stepX = direction.x > 0 ? 1 : -1;
+        const stepY = direction.y > 0 ? 1 : -1;
+        const stepZ = direction.z > 0 ? 1 : -1;
+
+        const tDeltaX = direction.x !== 0 ? Math.abs(1 / direction.x) : Infinity;
+        const tDeltaY = direction.y !== 0 ? Math.abs(1 / direction.y) : Infinity;
+        const tDeltaZ = direction.z !== 0 ? Math.abs(1 / direction.z) : Infinity;
+
+        let tMaxX = direction.x > 0 ? (x + 1 - origin.x) * tDeltaX : (origin.x - x) * tDeltaX;
+        let tMaxY = direction.y > 0 ? (y + 1 - origin.y) * tDeltaY : (origin.y - y) * tDeltaY;
+        let tMaxZ = direction.z > 0 ? (z + 1 - origin.z) * tDeltaZ : (origin.z - z) * tDeltaZ;
+
+        let normal = { x: 0, y: 0, z: 0 };
+        let dist = 0;
+
+        while (dist <= maxDist) {
+            const block = world.getBlock(x, y, z);
+            if (block !== BLOCK.AIR && block !== BLOCK.WATER) {
+                return { x, y, z, block, normal };
+            }
+
+            if (tMaxX < tMaxY) {
+                if (tMaxX < tMaxZ) {
+                    x += stepX;
+                    dist = tMaxX;
+                    tMaxX += tDeltaX;
+                    normal = { x: -stepX, y: 0, z: 0 };
+                } else {
+                    z += stepZ;
+                    dist = tMaxZ;
+                    tMaxZ += tDeltaZ;
+                    normal = { x: 0, y: 0, z: -stepZ };
+                }
+            } else {
+                if (tMaxY < tMaxZ) {
+                    y += stepY;
+                    dist = tMaxY;
+                    tMaxY += tDeltaY;
+                    normal = { x: 0, y: -stepY, z: 0 };
+                } else {
+                    z += stepZ;
+                    dist = tMaxZ;
+                    tMaxZ += tDeltaZ;
+                    normal = { x: 0, y: 0, z: -stepZ };
+                }
+            }
+        }
+        return null;
     }
-  </script>
+
+    // ============================================================================
+    // 7. СИСТЕМА 3D ЧАСТИЦ РАЗРУШЕНИЯ БЛОКОВ
+    // ============================================================================
+    class ParticleSystem {
+        constructor(scene, atlases) {
+            this.scene = scene;
+            this.atlases = atlases;
+            this.particles = [];
+            this.boxGeo = new THREE.BoxGeometry(0.16, 0.16, 0.16);
+        }
+
+        spawnBlockBurst(wx, wy, wz, blockId) {
+            const info = BLOCK_INFO[blockId];
+            if (!info) return;
+
+            const tileIndex = info.faces.side;
+            const gridCols = this.atlases.gridCols;
+            const uvStep = 1.0 / gridCols;
+            const u0 = (tileIndex % gridCols) * uvStep + 0.02;
+            const v0 = 1.0 - (Math.floor(tileIndex / gridCols) + 1) * uvStep + 0.02;
+
+            const geo = this.boxGeo.clone();
+            const uvAttr = geo.attributes.uv;
+            for (let i = 0; i < uvAttr.count; i++) {
+                uvAttr.setXY(
+                    i,
+                    u0 + (uvAttr.getX(i) * 0.5) * uvStep,
+                    v0 + (uvAttr.getY(i) * 0.5) * uvStep
+                );
+            }
+
+            const mat = new THREE.MeshLambertMaterial({ map: this.atlases.colorTex });
+
+            for (let i = 0; i < 20; i++) {
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(
+                    wx + 0.2 + Math.random() * 0.6,
+                    wy + 0.2 + Math.random() * 0.6,
+                    wz + 0.2 + Math.random() * 0.6
+                );
+                this.scene.add(mesh);
+                this.particles.push({
+                    mesh,
+                    vx: (Math.random() - 0.5) * 4.2,
+                    vy: Math.random() * 3.8 + 1.2,
+                    vz: (Math.random() - 0.5) * 4.2,
+                    life: 0.45 + Math.random() * 0.35
+                });
+            }
+        }
+
+        update(dt, world) {
+            for (let i = this.particles.length - 1; i >= 0; i--) {
+                const p = this.particles[i];
+                p.life -= dt;
+                if (p.life <= 0) {
+                    this.scene.remove(p.mesh);
+                    this.particles.splice(i, 1);
+                    continue;
+                }
+                p.vy -= 14.0 * dt;
+                const nx = p.mesh.position.x + p.vx * dt;
+                const ny = p.mesh.position.y + p.vy * dt;
+                const nz = p.mesh.position.z + p.vz * dt;
+
+                if (world.isSolidCollider(Math.floor(nx), Math.floor(ny), Math.floor(nz))) {
+                    p.vy *= -0.35;
+                    p.vx *= 0.7;
+                    p.vz *= 0.7;
+                } else {
+                    p.mesh.position.set(nx, ny, nz);
+                }
+                p.mesh.rotation.x += 5 * dt;
+                p.mesh.rotation.y += 5 * dt;
+                const s = Math.min(1, p.life * 2.5);
+                p.mesh.scale.setScalar(s);
+            }
+        }
+    }
+
+    // ============================================================================
+    // 8. ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ СЦЕНЫ, ОСВЕЩЕНИЯ, НЕБА И ГЕЙМПЛЕЯ
+    // ============================================================================
+    window.onload = function () {
+        const canvas = document.getElementById('game-canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.05;
+
+        const scene = new THREE.Scene();
+        const fogColor = new THREE.Color(0x8ec5fc);
+        scene.background = fogColor;
+        scene.fog = new THREE.FogExp2(fogColor, 0.014);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 250);
+        scene.add(camera);
+
+        // Освещение: Полусферический небесный свет + Солнце с мягкими тенями + Фонарь
+        const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x3f4e38, 0.58);
+        scene.add(hemiLight);
+
+        const sunLight = new THREE.DirectionalLight(0xfff7ed, 1.15);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 140;
+        const shadowCamSize = 38;
+        sunLight.shadow.camera.left = -shadowCamSize;
+        sunLight.shadow.camera.right = shadowCamSize;
+        sunLight.shadow.camera.top = shadowCamSize;
+        sunLight.shadow.camera.bottom = -shadowCamSize;
+        sunLight.shadow.bias = -0.0006;
+        scene.add(sunLight);
+        scene.add(sunLight.target);
+
+        // Динамический карманный фонарь + свет от светокамней
+        const torchLight = new THREE.PointLight(0xffb74d, 1.1, 16, 1.8);
+        camera.add(torchLight);
+        let torchEnabled = true;
+
+        const glowLight = new THREE.PointLight(0xffcc55, 1.35, 14, 1.6);
+        scene.add(glowLight);
+
+        // Небесные тела (Солнце, Луна, Звёзды и 3D Облака)
+        const skyGroup = new THREE.Group();
+        scene.add(skyGroup);
+
+        const sunMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(10, 10, 10),
+            new THREE.MeshBasicMaterial({ color: 0xfff3b0, fog: false })
+        );
+        skyGroup.add(sunMesh);
+
+        const moonMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(8, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0xe2e8f0, fog: false })
+        );
+        skyGroup.add(moonMesh);
+
+        // Звёздное небо
+        const starGeo = new THREE.BufferGeometry();
+        const starPositions = [];
+        for (let i = 0; i < 450; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(Math.random() * 0.85 + 0.12);
+            const r = 135;
+            starPositions.push(
+                r * Math.sin(phi) * Math.cos(theta),
+                r * Math.cos(phi),
+                r * Math.sin(phi) * Math.sin(theta)
+            );
+        }
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.4, transparent: true, opacity: 0, fog: false });
+        const starField = new THREE.Points(starGeo, starMat);
+        skyGroup.add(starField);
+
+        // Объёмные 3D-облака
+        const cloudsGroup = new THREE.Group();
+        const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.82 });
+        for (let i = 0; i < 22; i++) {
+            const w = 10 + Math.random() * 16;
+            const d = 8 + Math.random() * 14;
+            const cMesh = new THREE.Mesh(new THREE.BoxGeometry(w, 2.2, d), cloudMat);
+            cMesh.position.set(
+                (Math.random() - 0.5) * 180,
+                44 + (Math.random() - 0.5) * 3,
+                (Math.random() - 0.5) * 180
+            );
+            cloudsGroup.add(cMesh);
+        }
+        scene.add(cloudsGroup);
+
+        // Инициализация текстур и мира
+        const atlases = createTextureAtlases();
+        const world = new VoxelWorld(scene, atlases);
+        const particles = new ParticleSystem(scene, atlases);
+
+        // 3D Рамка выделения блока
+        const selBoxGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.006, 1.006, 1.006));
+        const selBoxMat = new THREE.LineBasicMaterial({ color: 0x0f172a, linewidth: 2 });
+        const selectionBox = new THREE.LineSegments(selBoxGeo, selBoxMat);
+        selectionBox.visible = false;
+        scene.add(selectionBox);
+
+        // 3D Блок в руке игрока (правый нижний угол)
+        const handGroup = new THREE.Group();
+        camera.add(handGroup);
+        handGroup.position.set(0.52, -0.42, -0.72);
+        let handMesh = null;
+        let handSwing = 0;
+
+        function updateHandBlockMesh(blockId) {
+            if (handMesh) {
+                handGroup.remove(handMesh);
+                handMesh.geometry.dispose();
+            }
+            const info = BLOCK_INFO[blockId];
+            if (!info) return;
+
+            const geo = new THREE.BoxGeometry(0.34, 0.34, 0.34);
+            const gridCols = atlases.gridCols;
+            const uvStep = 1.0 / gridCols;
+            const uvAttr = geo.attributes.uv;
+
+            // Порядок граней в BoxGeometry: +X, -X, +Y, -Y, +Z, -Z
+            const faceTiles = [
+                info.faces.side, info.faces.side,
+                info.faces.top,  info.faces.bottom,
+                info.faces.side, info.faces.side
+            ];
+
+            for (let f = 0; f < 6; f++) {
+                const t = faceTiles[f];
+                const u0 = (t % gridCols) * uvStep + 0.002;
+                const v0 = 1.0 - (Math.floor(t / gridCols) + 1) * uvStep + 0.002;
+                const u1 = u0 + uvStep - 0.004;
+                const v1 = v0 + uvStep - 0.004;
+
+                const base = f * 4;
+                uvAttr.setXY(base + 0, u0, v1);
+                uvAttr.setXY(base + 1, u1, v1);
+                uvAttr.setXY(base + 2, u0, v0);
+                uvAttr.setXY(base + 3, u1, v0);
+            }
+
+            handMesh = new THREE.Mesh(geo, info.transparent ? world.transparentMat : world.opaqueMat);
+            handMesh.rotation.set(0.25, -0.65, 0.1);
+            handGroup.add(handMesh);
+        }
+
+        // ============================================================================
+        // 9. ИНТЕРФЕЙС ХОТБАРА И НАСТРОЕК
+        // ============================================================================
+        let selectedSlot = 0;
+        const hotbarEl = document.getElementById('hotbar');
+        const labelEl = document.getElementById('selected-block-label');
+
+        function renderHotbar() {
+            hotbarEl.innerHTML = '';
+            HOTBAR_BLOCKS.forEach((bId, idx) => {
+                const slot = document.createElement('button');
+                slot.className = `hotbar-slot w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex flex-col items-center justify-center relative cursor-pointer ${idx === selectedSlot ? 'active' : ''}`;
+                slot.innerHTML = `
+                    <span class="absolute top-1 left-1.5 font-mono-hud text-[10px] text-slate-400 font-bold">${idx + 1}</span>
+                    <img src="${atlases.iconURLs[bId]}" class="hotbar-icon w-7 h-7 sm:w-8 sm:h-8 rounded-sm shadow" alt="">
+                `;
+                slot.addEventListener('click', () => selectHotbarSlot(idx));
+                hotbarEl.appendChild(slot);
+            });
+            const currentBlock = HOTBAR_BLOCKS[selectedSlot];
+            labelEl.textContent = BLOCK_INFO[currentBlock].name;
+            updateHandBlockMesh(currentBlock);
+        }
+
+        function selectHotbarSlot(idx) {
+            selectedSlot = (idx + HOTBAR_BLOCKS.length) % HOTBAR_BLOCKS.length;
+            renderHotbar();
+        }
+
+        renderHotbar();
+
+        function showToast(text) {
+            const toast = document.getElementById('toast-msg');
+            toast.textContent = text;
+            toast.classList.remove('opacity-0', '-translate-y-2');
+            clearTimeout(showToast._timer);
+            showToast._timer = setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+            }, 2200);
+        }
+
+        // ============================================================================
+        // 10. ФИЗИКА ИГРОКА, КОЛЛИЗИИ AABB И УПРАВЛЕНИЕ ОТ ПЕРВОГО ЛИЦА
+        // ============================================================================
+        const spawnCol = world.getColumnInfo(8, 8);
+        const player = {
+            pos: new THREE.Vector3(8.5, Math.max(spawnCol.height + 3, SEA_LEVEL + 3), 8.5),
+            vel: new THREE.Vector3(0, 0, 0),
+            yaw: 0.6,
+            pitch: -0.15,
+            width: 0.6,
+            height: 1.75,
+            eyeHeight: 1.58,
+            onGround: false,
+            flying: false,
+            stepTimer: 0
+        };
+
+        const keys = {};
+        let lastSpacePress = 0;
+        let isPaused = true;
+        let renderRadius = 4;
+        let timeOfDay = 10.5; // 0..24 часа
+        let autoDayCycle = true;
+
+        // Проверка пересечения AABB игрока с твёрдыми вокселями
+        function checkAABBCollision(px, py, pz) {
+            const hw = player.width * 0.5;
+            const minX = Math.floor(px - hw);
+            const maxX = Math.floor(px + hw);
+            const minY = Math.floor(py);
+            const maxY = Math.floor(py + player.height - 0.01);
+            const minZ = Math.floor(pz - hw);
+            const maxZ = Math.floor(pz + hw);
+
+            for (let x = minX; x <= maxX; x++) {
+                for (let y = minY; y <= maxY; y++) {
+                    for (let z = minZ; z <= maxZ; z++) {
+                        if (world.isSolidCollider(x, y, z)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Проверка, не пересекается ли устанавливаемый блок с телом игрока
+        function blockOverlapsPlayer(bx, by, bz) {
+            const hw = player.width * 0.5;
+            const pMinX = player.pos.x - hw, pMaxX = player.pos.x + hw;
+            const pMinY = player.pos.y,      pMaxY = player.pos.y + player.height;
+            const pMinZ = player.pos.z - hw, pMaxZ = player.pos.z + hw;
+
+            return (
+                pMaxX > bx && pMinX < bx + 1 &&
+                pMaxY > by && pMinY < by + 1 &&
+                pMaxZ > bz && pMinZ < bz + 1
+            );
+        }
+
+        function toggleFlyMode() {
+            player.flying = !player.flying;
+            player.vel.y = 0;
+            const badge = document.getElementById('badge-fly');
+            badge.classList.toggle('hidden', !player.flying);
+            showToast(player.flying ? '✈️ Режим полёта включён' : '🚶 Режим ходьбы включён');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+
+            if (e.code.startsWith('Digit')) {
+                const num = parseInt(e.code.replace('Digit', ''), 10);
+                if (num >= 1 && num <= 9) selectHotbarSlot(num - 1);
+            }
+            if (e.code === 'KeyF') {
+                toggleFlyMode();
+            }
+            if (e.code === 'KeyL') {
+                torchEnabled = !torchEnabled;
+                torchLight.intensity = torchEnabled ? 1.1 : 0;
+                document.getElementById('badge-torch').classList.toggle('opacity-40', !torchEnabled);
+            }
+            if (e.code === 'Space') {
+                const now = performance.now();
+                if (now - lastSpacePress < 280) {
+                    toggleFlyMode();
+                    lastSpacePress = 0;
+                } else {
+                    lastSpacePress = now;
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        window.addEventListener('wheel', (e) => {
+            if (isPaused) return;
+            selectHotbarSlot(selectedSlot + (e.deltaY > 0 ? 1 : -1));
+        });
+
+        // Вращение камеры мышью (Pointer Lock)
+        document.addEventListener('mousemove', (e) => {
+            if (document.pointerLockElement !== canvas) return;
+            const sensitivity = 0.0022;
+            player.yaw   -= e.movementX * sensitivity;
+            player.pitch -= e.movementY * sensitivity;
+            const maxPitch = Math.PI / 2 - 0.04;
+            player.pitch = Math.max(-maxPitch, Math.min(maxPitch, player.pitch));
+        });
+
+        // Разрушение и установка блоков
+        let currentTarget = null;
+
+        function performBlockAction(isPlace) {
+            handSwing = 1.0;
+            if (!currentTarget) return;
+
+            if (!isPlace) {
+                // Разрушение блока
+                const { x, y, z, block } = currentTarget;
+                const info = BLOCK_INFO[block];
+                if (world.setBlock(x, y, z, BLOCK.AIR)) {
+                    particles.spawnBlockBurst(x, y, z, block);
+                    soundFX.playBlockSound(info ? info.sound : 'stone', 'break');
+                }
+            } else {
+                // Установка блока
+                const { x, y, z, normal } = currentTarget;
+                const nx = x + normal.x;
+                const ny = y + normal.y;
+                const nz = z + normal.z;
+
+                if (!blockOverlapsPlayer(nx, ny, nz)) {
+                    const placeId = HOTBAR_BLOCKS[selectedSlot];
+                    const info = BLOCK_INFO[placeId];
+                    if (world.setBlock(nx, ny, nz, placeId)) {
+                        soundFX.playBlockSound(info ? info.sound : 'stone', 'place');
+                    }
+                }
+            }
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (isPaused) return;
+            if (document.pointerLockElement !== canvas) {
+                canvas.requestPointerLock?.();
+                return;
+            }
+            if (e.button === 0) performBlockAction(false);
+            if (e.button === 2) performBlockAction(true);
+        });
+
+        window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Сенсорное управление для мобильных устройств
+        document.querySelectorAll('#mobile-controls button[data-key]').forEach(btn => {
+            const code = btn.getAttribute('data-key');
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[code] = true; });
+            btn.addEventListener('touchend',   (e) => { e.preventDefault(); keys[code] = false; });
+        });
+        document.getElementById('mob-break')?.addEventListener('touchstart', (e) => { e.preventDefault(); performBlockAction(false); });
+        document.getElementById('mob-place')?.addEventListener('touchstart', (e) => { e.preventDefault(); performBlockAction(true); });
+        document.getElementById('mob-fly')?.addEventListener('touchstart',   (e) => { e.preventDefault(); toggleFlyMode(); });
+
+        // ============================================================================
+        // 11. МЕНЮ ПАУЗЫ, НАСТРОЙКИ И СКАЧИВАНИЕ ДЛЯ GITHUB
+        // ============================================================================
+        const pauseModal = document.getElementById('pause-modal');
+
+        function setPaused(paused) {
+            isPaused = paused;
+            pauseModal.style.display = paused ? 'flex' : 'none';
+        }
+
+        document.addEventListener('pointerlockchange', () => {
+            if (document.pointerLockElement === canvas) {
+                setPaused(false);
+            } else {
+                setPaused(true);
+            }
+        });
+
+        document.getElementById('btn-resume').addEventListener('click', () => {
+            soundFX.init();
+            setPaused(false);
+            canvas.requestPointerLock?.();
+        });
+
+        // Настройка дальности прорисовки
+        const optRenderDist = document.getElementById('opt-render-dist');
+        optRenderDist.addEventListener('input', (e) => {
+            renderRadius = parseInt(e.target.value, 10);
+            document.getElementById('val-render-dist').textContent = `${renderRadius} чанка`;
+        });
+
+        // Настройка времени суток
+        const optTime = document.getElementById('opt-time');
+        optTime.addEventListener('input', (e) => {
+            timeOfDay = parseFloat(e.target.value);
+            updateTimeLabel();
+        });
+
+        document.querySelectorAll('[data-settime]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                timeOfDay = parseFloat(btn.getAttribute('data-settime'));
+                optTime.value = timeOfDay;
+                updateTimeLabel();
+            });
+        });
+
+        document.getElementById('opt-day-cycle').addEventListener('change', (e) => {
+            autoDayCycle = e.target.checked;
+        });
+
+        // Настройка FOV и теней
+        document.getElementById('opt-fov').addEventListener('input', (e) => {
+            camera.fov = parseInt(e.target.value, 10);
+            camera.updateProjectionMatrix();
+            document.getElementById('val-fov').textContent = `${camera.fov}°`;
+        });
+
+        document.getElementById('opt-shadows').addEventListener('change', (e) => {
+            sunLight.castShadow = e.target.checked;
+        });
+
+        // Генерация нового мира и сохранение
+        document.getElementById('btn-new-world').addEventListener('click', () => {
+            const seedInput = document.getElementById('opt-seed');
+            const newSeed = parseInt(seedInput.value, 10) || Math.floor(Math.random() * 90000 + 10000);
+            seedInput.value = newSeed;
+            document.getElementById('val-seed').textContent = `#${newSeed}`;
+            world.regenerateAll(newSeed, true);
+            const col = world.getColumnInfo(8, 8);
+            player.pos.set(8.5, Math.max(col.height + 3, SEA_LEVEL + 3), 8.5);
+            showToast(`🌍 Сгенерирован новый мир (Seed #${newSeed})`);
+        });
+
+        document.getElementById('btn-save-world').addEventListener('click', () => {
+            world.saveState();
+            showToast('💾 Постройки успешно сохранены в браузере!');
+        });
+
+        document.getElementById('btn-reset-mods').addEventListener('click', () => {
+            world.regenerateAll(world.perlin.seed, true);
+            showToast('♻️ Все изменения мира сброшены');
+        });
+
+        // Кнопка скачивания готового файла index.html для GitHub Pages
+        document.getElementById('btn-download-github').addEventListener('click', () => {
+            const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'index.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('📦 Файл index.html скачан! Загрузите его в репозиторий GitHub.');
+        });
+
+        function updateTimeLabel() {
+            const hrs = Math.floor(timeOfDay) % 24;
+            const mins = Math.floor((timeOfDay % 1) * 60);
+            const formatted = `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+            document.getElementById('val-time').textContent = formatted;
+            let phase = 'День';
+            if (hrs < 5 || hrs >= 21) phase = 'Ночь';
+            else if (hrs < 8) phase = 'Рассвет';
+            else if (hrs >= 18) phase = 'Закат';
+            document.getElementById('hud-time').textContent = `${formatted} (${phase})`;
+        }
+
+        // ============================================================================
+        // 12. ОБНОВЛЕНИЕ АТМОСФЕРЫ, ДНЯ/НОЧИ И ГЛАВНЫЙ ИГРОВОЙ ЦИКЛ
+        // ============================================================================
+        const daySkyColor    = new THREE.Color(0x7cc2ff);
+        const sunsetSkyColor = new THREE.Color(0xf97316);
+        const nightSkyColor  = new THREE.Color(0x070b19);
+        const currentSky     = new THREE.Color();
+
+        function updateAtmosphere(dt) {
+            if (autoDayCycle && !isPaused) {
+                timeOfDay = (timeOfDay + dt * 0.08) % 24;
+                optTime.value = timeOfDay.toFixed(1);
+                updateTimeLabel();
+            }
+
+            // Угол солнца: в 12:00 в зените
+            const angle = ((timeOfDay - 6) / 24) * Math.PI * 2;
+            const sunY = Math.sin(angle);
+            const sunXZ = Math.cos(angle);
+
+            skyGroup.position.copy(player.pos);
+            sunMesh.position.set(sunXZ * 115, sunY * 115, -35);
+            moonMesh.position.set(-sunXZ * 115, -sunY * 115, 35);
+
+            // Позиционируем теневую камеру солнца вокруг игрока
+            sunLight.position.set(
+                player.pos.x + sunXZ * 65,
+                player.pos.y + Math.max(12, Math.abs(sunY) * 75),
+                player.pos.z - 25
+            );
+            sunLight.target.position.copy(player.pos);
+
+            // Плавный переход цвета неба (День / Закат / Ночь)
+            if (sunY > 0.25) {
+                currentSky.copy(daySkyColor);
+                sunLight.intensity = 1.15;
+                hemiLight.intensity = 0.6;
+                starMat.opacity = 0;
+            } else if (sunY > -0.15) {
+                const t = (sunY + 0.15) / 0.4;
+                if (t > 0.5) {
+                    currentSky.copy(sunsetSkyColor).lerp(daySkyColor, (t - 0.5) * 2);
+                } else {
+                    currentSky.copy(nightSkyColor).lerp(sunsetSkyColor, t * 2);
+                }
+                sunLight.intensity = Math.max(0.15, t * 1.1);
+                hemiLight.intensity = 0.28 + t * 0.32;
+                starMat.opacity = 1.0 - t;
+            } else {
+                currentSky.copy(nightSkyColor);
+                sunLight.intensity = 0.14;
+                hemiLight.intensity = 0.24;
+                starMat.opacity = 0.95;
+            }
+
+            // Проверка погружения камеры под воду
+            const camBlock = world.getBlock(
+                Math.floor(camera.position.x),
+                Math.floor(camera.position.y),
+                Math.floor(camera.position.z)
+            );
+            const underwaterOverlay = document.getElementById('underwater-overlay');
+            if (camBlock === BLOCK.WATER) {
+                underwaterOverlay.style.opacity = '1';
+                scene.fog.color.setHex(0x064e82);
+                scene.fog.density = 0.065;
+            } else {
+                underwaterOverlay.style.opacity = '0';
+                scene.background.copy(currentSky);
+                scene.fog.color.copy(currentSky);
+                scene.fog.density = 0.02 / Math.max(2.5, renderRadius * 0.78);
+            }
+
+            // Движение облаков
+            cloudsGroup.children.forEach(c => {
+                c.position.x += dt * 1.2;
+                if (c.position.x - player.pos.x > 95) c.position.x -= 190;
+                if (c.position.x - player.pos.x < -95) c.position.x += 190;
+                if (c.position.z - player.pos.z > 95) c.position.z -= 190;
+                if (c.position.z - player.pos.z < -95) c.position.z += 190;
+            });
+
+            // Ближайший Светокамень освещает окружение
+            let nearestGlowDist = Infinity;
+            let nearestGlowPos = null;
+            world.glowBlocks.forEach(k => {
+                const [gx, gy, gz] = k.split(',').map(Number);
+                const d = (gx - player.pos.x) ** 2 + (gy - player.pos.y) ** 2 + (gz - player.pos.z) ** 2;
+                if (d < nearestGlowDist && d < 256) {
+                    nearestGlowDist = d;
+                    nearestGlowPos = { gx, gy, gz };
+                }
+            });
+            if (nearestGlowPos) {
+                glowLight.intensity = 1.4;
+                glowLight.position.set(nearestGlowPos.gx + 0.5, nearestGlowPos.gy + 0.5, nearestGlowPos.gz + 0.5);
+            } else {
+                glowLight.intensity = 0;
+            }
+        }
+
+        function updatePlayerPhysics(dt) {
+            const forward = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+            const right   = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+
+            let moveX = 0, moveZ = 0;
+            if (keys['KeyW'] || keys['ArrowUp'])    { moveX += forward.x; moveZ += forward.z; }
+            if (keys['KeyS'] || keys['ArrowDown'])  { moveX -= forward.x; moveZ -= forward.z; }
+            if (keys['KeyD'] || keys['ArrowRight']) { moveX += right.x;   moveZ += right.z; }
+            if (keys['KeyA'] || keys['ArrowLeft'])  { moveX -= right.x;   moveZ -= right.z; }
+
+            const len = Math.hypot(moveX, moveZ);
+            if (len > 0) { moveX /= len; moveZ /= len; }
+
+            const isSprinting = keys['ShiftLeft'] || keys['ControlLeft'];
+            const feetBlock = world.getBlock(Math.floor(player.pos.x), Math.floor(player.pos.y + 0.2), Math.floor(player.pos.z));
+            const inWater = feetBlock === BLOCK.WATER;
+
+            const baseSpeed = player.flying ? (isSprinting ? 16.0 : 10.0) : (inWater ? 3.4 : (isSprinting ? 7.0 : 4.6));
+            player.vel.x = moveX * baseSpeed;
+            player.vel.z = moveZ * baseSpeed;
+
+            if (player.flying) {
+                player.vel.y = 0;
+                if (keys['Space']) player.vel.y = 7.5;
+                if (keys['KeyC'] || keys['ShiftRight']) player.vel.y = -7.5;
+            } else if (inWater) {
+                player.vel.y -= 7.0 * dt;
+                player.vel.y = Math.max(player.vel.y, -3.0);
+                if (keys['Space']) player.vel.y = 3.6;
+            } else {
+                player.vel.y -= 24.0 * dt;
+                player.vel.y = Math.max(player.vel.y, -32.0);
+                if (keys['Space'] && player.onGround) {
+                    player.vel.y = 8.4;
+                    player.onGround = false;
+                }
+            }
+
+            // Раздельное разрешение коллизий по осям X, Z, Y
+            const nextX = player.pos.x + player.vel.x * dt;
+            if (!checkAABBCollision(nextX, player.pos.y, player.pos.z)) {
+                player.pos.x = nextX;
+            }
+
+            const nextZ = player.pos.z + player.vel.z * dt;
+            if (!checkAABBCollision(player.pos.x, player.pos.y, nextZ)) {
+                player.pos.z = nextZ;
+            }
+
+            const nextY = player.pos.y + player.vel.y * dt;
+            if (!checkAABBCollision(player.pos.x, nextY, player.pos.z)) {
+                player.pos.y = nextY;
+                player.onGround = false;
+            } else {
+                if (player.vel.y < 0) player.onGround = true;
+                player.vel.y = 0;
+            }
+
+            // Звук шагов и покачивание камеры при ходьбе
+            let bobOffset = 0;
+            if (len > 0 && (player.onGround || inWater) && !player.flying) {
+                player.stepTimer += dt * (isSprinting ? 11 : 8);
+                bobOffset = Math.sin(player.stepTimer) * 0.045;
+                if (player.stepTimer > Math.PI) {
+                    player.stepTimer -= Math.PI;
+                    const groundBlock = world.getBlock(Math.floor(player.pos.x), Math.floor(player.pos.y - 0.2), Math.floor(player.pos.z));
+                    const gInfo = BLOCK_INFO[groundBlock];
+                    soundFX.playBlockSound(inWater ? 'water' : (gInfo ? gInfo.sound : 'grass'), 'step');
+                }
+            }
+
+            camera.position.set(player.pos.x, player.pos.y + player.eyeHeight + bobOffset, player.pos.z);
+            camera.rotation.order = 'YXZ';
+            camera.rotation.y = player.yaw;
+            camera.rotation.x = player.pitch;
+
+            // Анимация руки в правом нижнем углу
+            if (handSwing > 0) {
+                handSwing = Math.max(0, handSwing - dt * 4.8);
+            }
+            const swingAngle = Math.sin(handSwing * Math.PI);
+            handGroup.position.set(
+                0.52 - swingAngle * 0.14,
+                -0.42 - Math.abs(bobOffset) * 0.6 + swingAngle * 0.08,
+                -0.72 - swingAngle * 0.15
+            );
+            handGroup.rotation.x = -swingAngle * 0.65;
+            handGroup.rotation.z = swingAngle * 0.35;
+        }
+
+        // Предварительная генерация стартовых чанков
+        world.updateActiveChunks(player.pos.x, player.pos.z, renderRadius);
+        updateTimeLabel();
+
+        let prevTime = performance.now();
+        let frameCount = 0;
+        let fpsTimer = 0;
+
+        function animate(now) {
+            requestAnimationFrame(animate);
+
+            const dt = Math.min(0.05, (now - prevTime) / 1000);
+            prevTime = now;
+
+            // Счётчик FPS
+            frameCount++;
+            fpsTimer += dt;
+            if (fpsTimer >= 0.5) {
+                const fps = Math.round(frameCount / fpsTimer);
+                document.getElementById('hud-fps').textContent = `${fps} FPS`;
+                frameCount = 0;
+                fpsTimer = 0;
+
+                // Обновление HUD координат и биома
+                document.getElementById('hud-xyz').textContent =
+                    `${player.pos.x.toFixed(1)} / ${player.pos.y.toFixed(1)} / ${player.pos.z.toFixed(1)}`;
+                const col = world.getColumnInfo(Math.floor(player.pos.x), Math.floor(player.pos.z));
+                document.getElementById('hud-biome').textContent = col.biome;
+            }
+
+            if (!isPaused) {
+                updatePlayerPhysics(dt);
+            }
+
+            const activeChunks = world.updateActiveChunks(player.pos.x, player.pos.z, renderRadius);
+            document.getElementById('hud-chunks').textContent = String(activeChunks);
+
+            // DDA Рейкастинг взгляда
+            const lookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+            currentTarget = raycastVoxel(world, camera.position, lookDir, 7.5);
+            if (currentTarget) {
+                selectionBox.visible = true;
+                selectionBox.position.set(currentTarget.x + 0.5, currentTarget.y + 0.5, currentTarget.z + 0.5);
+            } else {
+                selectionBox.visible = false;
+            }
+
+            particles.update(dt, world);
+            updateAtmosphere(dt);
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate(performance.now());
+    };
+    </script>
 </body>
 </html>
